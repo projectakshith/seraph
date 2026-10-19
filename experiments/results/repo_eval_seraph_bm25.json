@@ -1,0 +1,1494 @@
+{
+  "schema_version": 1,
+  "repo": "/Users/akshithrajesh/Developer/seraph",
+  "commit": "d51f519b9656c9fb7c197941de87ff857a155147",
+  "tracked_worktree_dirty": true,
+  "cases_file": "/Users/akshithrajesh/Developer/seraph/experiments/repo_eval/seraph.jsonl",
+  "cases_sha256": "f37d736c32e8e4af010fab057c2c17fc5966d1c09998b75ee6daf14915ebc86f",
+  "seraph_source_sha256": "23e65cf28f10ea7e31eb49d295fb3dd754f58659901d1c1c622e870277b91ba4",
+  "case_count": 9,
+  "top_k": 10,
+  "python": "3.12.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "seraph_version": "0.1.0",
+  "runs": [
+    {
+      "config": "b1_bm25",
+      "config_sha256": "bc023128b895a50e41f6e093b5b2a41c07ee2a79162f640d038d0cde700976f6",
+      "config_values": {
+        "name": "b1_bm25",
+        "seed": 42,
+        "device": "auto",
+        "cache_dir": ".seraph_cache",
+        "cache_query_embeddings": true,
+        "allow_local_models": false,
+        "retrieval": {
+          "first_stage_k": 100,
+          "use_bm25": true,
+          "bm25_k1": 1.2,
+          "bm25_b": 0.9,
+          "bm25_stem": false,
+          "use_dense": false,
+          "dense_model": "qwen3-emb-0.6b",
+          "dense_fallback": null,
+          "fusion": "none",
+          "rrf_k": 60,
+          "fusion_norm": "minmax",
+          "static_weights": {
+            "lexical": 0.3,
+            "semantic": 0.7,
+            "structural": 0.0,
+            "graph": 0.0,
+            "evolution": 0.0
+          },
+          "use_reranker": false,
+          "reranker_model": "gemini-flash-lite-listwise",
+          "reranker_fallback": null,
+          "rerank_depth": 20,
+          "rerank_blend": 0.0,
+          "use_query_analyzer": false,
+          "analyzer": "rules",
+          "use_decomposition": false,
+          "adaptive_weights": "off",
+          "weight_model_path": null,
+          "use_structural": false,
+          "structural_model_path": null,
+          "use_graph_expansion": false,
+          "graph_hops": 1,
+          "graph_decay": 0.5,
+          "use_evolution": false,
+          "use_dedup": false,
+          "use_mmr": false,
+          "mmr_lambda": 0.7
+        },
+        "llm": {
+          "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+          "model": "gemini-3.5-flash-lite",
+          "api_key_env": "GEMINI_API_KEY",
+          "temperature": 0.0
+        }
+      },
+      "retrieval_mode": "BM25",
+      "metrics": {
+        "hit@1": 0.8888888888888888,
+        "hit@5": 1.0,
+        "mrr": 0.925925925925926,
+        "ndcg@5": 0.8329288978015399,
+        "noise@5": 0.7111111111111111,
+        "latency_p50_ms": 13.725958007853478,
+        "latency_p95_ms": 177.2441002074628,
+        "latency_mean_ms": 44.0359907806851
+      },
+      "per_query": [
+        {
+          "id": "intent-routing",
+          "query": "Where does search detect that the user explicitly wants tests or implementation code?",
+          "expected": [
+            {
+              "path": "src/seraph/service.py",
+              "symbols": [
+                "_search_intent",
+                "_apply_intent_ranking"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 1.0,
+            "noise@5": 0.8,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "_search_intent",
+              "kind": "function",
+              "lines": [
+                252,
+                258
+              ],
+              "score": 10.8938,
+              "retrieval_scores": {
+                "lexical": 10.893815994262695
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_change_context_keeps_search_evidence_when_compacting",
+              "kind": "function",
+              "lines": [
+                25,
+                50
+              ],
+              "score": 5.2114,
+              "retrieval_scores": {
+                "lexical": 5.211438179016113
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_explicit_search_intent_prioritizes_matching_results",
+              "kind": "function",
+              "lines": [
+                53,
+                65
+              ],
+              "score": 5.0846,
+              "retrieval_scores": {
+                "lexical": 5.084564685821533
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_explicit_search_intent_ranks_tests_and_implementations",
+              "kind": "function",
+              "lines": [
+                13,
+                22
+              ],
+              "score": 4.9565,
+              "retrieval_scores": {
+                "lexical": 4.956528663635254
+              }
+            },
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "wants_graph",
+              "kind": "function",
+              "lines": [
+                148,
+                149
+              ],
+              "score": 4.1732,
+              "retrieval_scores": {
+                "lexical": 4.173183441162109
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "search_code",
+              "kind": "function",
+              "lines": [
+                64,
+                67
+              ],
+              "score": 3.6855,
+              "retrieval_scores": {
+                "lexical": 3.6855127811431885
+              }
+            },
+            {
+              "path": "tests/test_lineage.py",
+              "symbol": "changes",
+              "kind": "function",
+              "lines": [
+                48,
+                50
+              ],
+              "score": 3.6407,
+              "retrieval_scores": {
+                "lexical": 3.6406731605529785
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_history_search_collapses_identical_code_across_versions",
+              "kind": "function",
+              "lines": [
+                126,
+                137
+              ],
+              "score": 3.4127,
+              "retrieval_scores": {
+                "lexical": 3.4127423763275146
+              }
+            },
+            {
+              "path": "src/seraph/cli.py",
+              "symbol": "_render",
+              "kind": "function",
+              "lines": [
+                14,
+                32
+              ],
+              "score": 3.3767,
+              "retrieval_scores": {
+                "lexical": 3.376720428466797
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "repo",
+              "kind": "function",
+              "lines": [
+                45,
+                51
+              ],
+              "score": 3.3332,
+              "retrieval_scores": {
+                "lexical": 3.3332300186157227
+              }
+            }
+          ]
+        },
+        {
+          "id": "context-pack",
+          "query": "Where is task specific context assembled and compacted to fit a character budget?",
+          "expected": [
+            {
+              "path": "src/seraph/context_tools.py",
+              "symbols": [
+                "prepare_change_context"
+              ]
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbols": [
+                "prepare_change_context"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 0.9197207891481876,
+            "noise@5": 0.6,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "prepare_change_context",
+              "kind": "function",
+              "lines": [
+                160,
+                173
+              ],
+              "score": 5.4269,
+              "retrieval_scores": {
+                "lexical": 5.426923751831055
+              }
+            },
+            {
+              "path": "src/seraph/context_tools.py",
+              "symbol": "change_impact",
+              "kind": "function",
+              "lines": [
+                214,
+                221
+              ],
+              "score": 4.8668,
+              "retrieval_scores": {
+                "lexical": 4.866791725158691
+              }
+            },
+            {
+              "path": "src/seraph/context_tools.py",
+              "symbol": "prepare_change_context",
+              "kind": "function",
+              "lines": [
+                252,
+                389
+              ],
+              "score": 4.0984,
+              "retrieval_scores": {
+                "lexical": 4.098414421081543
+              }
+            },
+            {
+              "path": "tests/test_lineage.py",
+              "symbol": "changes",
+              "kind": "function",
+              "lines": [
+                48,
+                50
+              ],
+              "score": 2.879,
+              "retrieval_scores": {
+                "lexical": 2.878962993621826
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/structural.py",
+              "symbol": "train_on_apps",
+              "kind": "function",
+              "lines": [
+                315,
+                329
+              ],
+              "score": 2.8026,
+              "retrieval_scores": {
+                "lexical": 2.8025708198547363
+              }
+            },
+            {
+              "path": "src/seraph/evaluation/coir.py",
+              "symbol": "load_apps",
+              "kind": "function",
+              "lines": [
+                97,
+                117
+              ],
+              "score": 2.7552,
+              "retrieval_scores": {
+                "lexical": 2.755164861679077
+              }
+            },
+            {
+              "path": "src/seraph/backends/gemini.py",
+              "symbol": "GeminiEmbedder",
+              "kind": "class",
+              "lines": [
+                30,
+                86
+              ],
+              "score": 2.7108,
+              "retrieval_scores": {
+                "lexical": 2.7107725143432617
+              }
+            },
+            {
+              "path": "src/seraph/query/classifier.py",
+              "symbol": "LearnedClassifier",
+              "kind": "class",
+              "lines": [
+                49,
+                86
+              ],
+              "score": 2.6294,
+              "retrieval_scores": {
+                "lexical": 2.6294398307800293
+              }
+            },
+            {
+              "path": "src/seraph/cli.py",
+              "symbol": "_render",
+              "kind": "function",
+              "lines": [
+                14,
+                32
+              ],
+              "score": 2.5894,
+              "retrieval_scores": {
+                "lexical": 2.58941912651062
+              }
+            },
+            {
+              "path": "src/seraph/evaluation/cli.py",
+              "symbol": "train_structural",
+              "kind": "function",
+              "lines": [
+                317,
+                324
+              ],
+              "score": 2.5075,
+              "retrieval_scores": {
+                "lexical": 2.507512092590332
+              }
+            }
+          ]
+        },
+        {
+          "id": "worktree-snapshot",
+          "query": "How are uncommitted working tree files combined with the indexed Git revision?",
+          "expected": [
+            {
+              "path": "src/seraph/working_tree.py",
+              "symbols": [
+                "snapshot",
+                "WorktreeSnapshot"
+              ]
+            },
+            {
+              "path": "src/seraph/context_tools.py",
+              "symbols": [
+                "working_tree_status"
+              ]
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbols": [
+                "get_working_tree_status"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 1.0,
+            "noise@5": 0.4,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/context_tools.py",
+              "symbol": "working_tree_status",
+              "kind": "function",
+              "lines": [
+                104,
+                113
+              ],
+              "score": 9.2409,
+              "retrieval_scores": {
+                "lexical": 9.240936279296875
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "get_working_tree_status",
+              "kind": "function",
+              "lines": [
+                126,
+                130
+              ],
+              "score": 5.805,
+              "retrieval_scores": {
+                "lexical": 5.805047035217285
+              }
+            },
+            {
+              "path": "src/seraph/working_tree.py",
+              "symbol": "snapshot",
+              "kind": "function",
+              "lines": [
+                30,
+                74
+              ],
+              "score": 5.5773,
+              "retrieval_scores": {
+                "lexical": 5.577264308929443
+              }
+            },
+            {
+              "path": "tests/test_versioned_index.py",
+              "symbol": "test_reuses_nearest_indexed_ancestor_when_parent_is_not_indexed",
+              "kind": "function",
+              "lines": [
+                95,
+                114
+              ],
+              "score": 5.5145,
+              "retrieval_scores": {
+                "lexical": 5.514479637145996
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "search_worktree",
+              "kind": "function",
+              "lines": [
+                133,
+                139
+              ],
+              "score": 5.2099,
+              "retrieval_scores": {
+                "lexical": 5.209920883178711
+              }
+            },
+            {
+              "path": "src/seraph/working_tree.py",
+              "symbol": "WorktreeSnapshot",
+              "kind": "class",
+              "lines": [
+                20,
+                27
+              ],
+              "score": 4.9944,
+              "retrieval_scores": {
+                "lexical": 4.994442939758301
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "get_repo_map",
+              "kind": "function",
+              "lines": [
+                176,
+                247
+              ],
+              "score": 4.9168,
+              "retrieval_scores": {
+                "lexical": 4.91679048538208
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "commit_files",
+              "kind": "function",
+              "lines": [
+                19,
+                25
+              ],
+              "score": 4.5144,
+              "retrieval_scores": {
+                "lexical": 4.5143585205078125
+              }
+            },
+            {
+              "path": "src/seraph/smoke.py",
+              "symbol": "_commit",
+              "kind": "function",
+              "lines": [
+                32,
+                37
+              ],
+              "score": 4.4299,
+              "retrieval_scores": {
+                "lexical": 4.429944038391113
+              }
+            },
+            {
+              "path": "tests/test_compare.py",
+              "symbol": "commit",
+              "kind": "function",
+              "lines": [
+                22,
+                27
+              ],
+              "score": 4.4164,
+              "retrieval_scores": {
+                "lexical": 4.416399955749512
+              }
+            }
+          ]
+        },
+        {
+          "id": "version-comparison",
+          "query": "Where are symbols and dependency edges compared between two Git commits?",
+          "expected": [
+            {
+              "path": "src/seraph/service.py",
+              "symbols": [
+                "compare_versions"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 1.0,
+            "noise@5": 0.8,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "compare_versions",
+              "kind": "function",
+              "lines": [
+                191,
+                237
+              ],
+              "score": 9.1645,
+              "retrieval_scores": {
+                "lexical": 9.164485931396484
+              }
+            },
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "DependencyChain",
+              "kind": "class",
+              "lines": [
+                108,
+                112
+              ],
+              "score": 7.2525,
+              "retrieval_scores": {
+                "lexical": 7.252467155456543
+              }
+            },
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "find_dependencies",
+              "kind": "function",
+              "lines": [
+                122,
+                145
+              ],
+              "score": 6.2643,
+              "retrieval_scores": {
+                "lexical": 6.264286041259766
+              }
+            },
+            {
+              "path": "tests/test_compare.py",
+              "symbol": "test_compare_identical_versions_is_empty",
+              "kind": "function",
+              "lines": [
+                69,
+                76
+              ],
+              "score": 5.3055,
+              "retrieval_scores": {
+                "lexical": 5.30551815032959
+              }
+            },
+            {
+              "path": "tests/test_compare.py",
+              "symbol": "test_compare_versions_reports_symbols_dependencies_and_commits",
+              "kind": "function",
+              "lines": [
+                30,
+                66
+              ],
+              "score": 5.0402,
+              "retrieval_scores": {
+                "lexical": 5.040217399597168
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "find_dependencies",
+              "kind": "function",
+              "lines": [
+                148,
+                178
+              ],
+              "score": 4.7956,
+              "retrieval_scores": {
+                "lexical": 4.795557975769043
+              }
+            },
+            {
+              "path": "src/seraph/types.py",
+              "symbol": "ChangeSet",
+              "kind": "class",
+              "lines": [
+                107,
+                113
+              ],
+              "score": 4.6048,
+              "retrieval_scores": {
+                "lexical": 4.604840278625488
+              }
+            },
+            {
+              "path": "src/seraph/index.py",
+              "symbol": "VersionedIndex",
+              "kind": "class",
+              "lines": [
+                287,
+                762
+              ],
+              "score": 4.3472,
+              "retrieval_scores": {
+                "lexical": 4.3472089767456055
+              }
+            },
+            {
+              "path": "src/seraph/cli.py",
+              "symbol": "_render_compare",
+              "kind": "function",
+              "lines": [
+                67,
+                96
+              ],
+              "score": 4.3338,
+              "retrieval_scores": {
+                "lexical": 4.333832740783691
+              }
+            },
+            {
+              "path": "src/seraph/cli.py",
+              "symbol": "main",
+              "kind": "function",
+              "lines": [
+                99,
+                158
+              ],
+              "score": 4.0715,
+              "retrieval_scores": {
+                "lexical": 4.071462154388428
+              }
+            }
+          ]
+        },
+        {
+          "id": "dependency-traversal",
+          "query": "Find the implementation that walks the call, import, and inheritance graph from a symbol.",
+          "expected": [
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbols": [
+                "find_dependencies"
+              ]
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbols": [
+                "find_dependencies"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 0.8503449055347546,
+            "noise@5": 0.6,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "find_dependencies",
+              "kind": "function",
+              "lines": [
+                92,
+                105
+              ],
+              "score": 8.8539,
+              "retrieval_scores": {
+                "lexical": 8.853931427001953
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "find_dependencies",
+              "kind": "function",
+              "lines": [
+                148,
+                178
+              ],
+              "score": 5.8157,
+              "retrieval_scores": {
+                "lexical": 5.815723419189453
+              }
+            },
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbol": "Ref",
+              "kind": "class",
+              "lines": [
+                37,
+                50
+              ],
+              "score": 5.1022,
+              "retrieval_scores": {
+                "lexical": 5.102226257324219
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "find_symbol",
+              "kind": "function",
+              "lines": [
+                135,
+                145
+              ],
+              "score": 5.0835,
+              "retrieval_scores": {
+                "lexical": 5.083456993103027
+              }
+            },
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "find_dependencies",
+              "kind": "function",
+              "lines": [
+                122,
+                145
+              ],
+              "score": 4.4628,
+              "retrieval_scores": {
+                "lexical": 4.4627604484558105
+              }
+            },
+            {
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "kinds_for",
+              "kind": "function",
+              "lines": [
+                39,
+                47
+              ],
+              "score": 4.0697,
+              "retrieval_scores": {
+                "lexical": 4.069723606109619
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "_search_intent",
+              "kind": "function",
+              "lines": [
+                252,
+                258
+              ],
+              "score": 3.9767,
+              "retrieval_scores": {
+                "lexical": 3.9766669273376465
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "find_symbol",
+              "kind": "function",
+              "lines": [
+                82,
+                89
+              ],
+              "score": 3.802,
+              "retrieval_scores": {
+                "lexical": 3.8019509315490723
+              }
+            },
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbol": "_python_refs",
+              "kind": "function",
+              "lines": [
+                96,
+                130
+              ],
+              "score": 3.4268,
+              "retrieval_scores": {
+                "lexical": 3.4268369674682617
+              }
+            },
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbol": "build_graph",
+              "kind": "function",
+              "lines": [
+                461,
+                485
+              ],
+              "score": 3.0418,
+              "retrieval_scores": {
+                "lexical": 3.04178524017334
+              }
+            }
+          ]
+        },
+        {
+          "id": "graph-construction",
+          "query": "Which tests cover Python calls, imports, inheritance and references, and where is the graph builder?",
+          "expected": [
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbols": [
+                "build_graph",
+                "RepoGraph"
+              ]
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbols": [
+                "test_python_calls_imports_inheritance_and_references"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 0.6131471927654584,
+            "noise@5": 0.8,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_python_calls_imports_inheritance_and_references",
+              "kind": "function",
+              "lines": [
+                58,
+                77
+              ],
+              "score": 12.7609,
+              "retrieval_scores": {
+                "lexical": 12.760923385620117
+              }
+            },
+            {
+              "path": "tests/test_graph.py",
+              "symbol": "test_kinds",
+              "kind": "function",
+              "lines": [
+                33,
+                35
+              ],
+              "score": 6.6497,
+              "retrieval_scores": {
+                "lexical": 6.64971923828125
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_go_graph",
+              "kind": "function",
+              "lines": [
+                160,
+                174
+              ],
+              "score": 5.5918,
+              "retrieval_scores": {
+                "lexical": 5.591830730438232
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_refs_of_unchanged_files_are_reused",
+              "kind": "function",
+              "lines": [
+                80,
+                91
+              ],
+              "score": 5.0935,
+              "retrieval_scores": {
+                "lexical": 5.093476295471191
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_typescript_graph",
+              "kind": "function",
+              "lines": [
+                141,
+                157
+              ],
+              "score": 5.0796,
+              "retrieval_scores": {
+                "lexical": 5.0795793533325195
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_unknown_receivers_resolve_only_to_a_unique_method",
+              "kind": "function",
+              "lines": [
+                131,
+                138
+              ],
+              "score": 5.0166,
+              "retrieval_scores": {
+                "lexical": 5.016591548919678
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_refs_are_backfilled_for_commits_indexed_before_the_graph",
+              "kind": "function",
+              "lines": [
+                94,
+                102
+              ],
+              "score": 4.9393,
+              "retrieval_scores": {
+                "lexical": 4.939320087432861
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "edges_of",
+              "kind": "function",
+              "lines": [
+                54,
+                55
+              ],
+              "score": 4.376,
+              "retrieval_scores": {
+                "lexical": 4.376047611236572
+              }
+            },
+            {
+              "path": "tests/test_contracts.py",
+              "symbol": "test_graph_neighbors_and_resolve",
+              "kind": "function",
+              "lines": [
+                16,
+                22
+              ],
+              "score": 4.0946,
+              "retrieval_scores": {
+                "lexical": 4.094626426696777
+              }
+            },
+            {
+              "path": "tests/test_graph.py",
+              "symbol": "test_dependency_chains",
+              "kind": "function",
+              "lines": [
+                50,
+                55
+              ],
+              "score": 3.9162,
+              "retrieval_scores": {
+                "lexical": 3.916189193725586
+              }
+            }
+          ]
+        },
+        {
+          "id": "lexical-retrieval",
+          "query": "Where is the BM25 code search index built and queried, and which test checks identifier ranking?",
+          "expected": [
+            {
+              "path": "src/seraph/retrieval/lexical.py",
+              "symbols": [
+                "LexicalRetriever"
+              ]
+            },
+            {
+              "path": "tests/test_lexical.py",
+              "symbols": [
+                "test_bm25_ranks_identifier_match"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 0.6131471927654584,
+            "noise@5": 0.8,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "tests/test_lexical.py",
+              "symbol": "test_bm25_ranks_identifier_match",
+              "kind": "function",
+              "lines": [
+                17,
+                31
+              ],
+              "score": 11.7461,
+              "retrieval_scores": {
+                "lexical": 11.74609088897705
+              }
+            },
+            {
+              "path": "tests/test_metrics.py",
+              "symbol": "test_mteb_search_protocol_adapter",
+              "kind": "function",
+              "lines": [
+                51,
+                72
+              ],
+              "score": 7.1793,
+              "retrieval_scores": {
+                "lexical": 7.179315567016602
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_change_context_keeps_search_evidence_when_compacting",
+              "kind": "function",
+              "lines": [
+                25,
+                50
+              ],
+              "score": 7.0734,
+              "retrieval_scores": {
+                "lexical": 7.073360919952393
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_explicit_search_intent_prioritizes_matching_results",
+              "kind": "function",
+              "lines": [
+                53,
+                65
+              ],
+              "score": 5.4527,
+              "retrieval_scores": {
+                "lexical": 5.452689170837402
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_history_search_collapses_identical_code_across_versions",
+              "kind": "function",
+              "lines": [
+                126,
+                137
+              ],
+              "score": 5.0375,
+              "retrieval_scores": {
+                "lexical": 5.037524700164795
+              }
+            },
+            {
+              "path": "tests/test_lineage.py",
+              "symbol": "changes",
+              "kind": "function",
+              "lines": [
+                48,
+                50
+              ],
+              "score": 4.8785,
+              "retrieval_scores": {
+                "lexical": 4.878487586975098
+              }
+            },
+            {
+              "path": "tests/test_smoke.py",
+              "symbol": "test_smoke_passes",
+              "kind": "function",
+              "lines": [
+                4,
+                6
+              ],
+              "score": 4.4611,
+              "retrieval_scores": {
+                "lexical": 4.46112585067749
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_explicit_search_intent_ranks_tests_and_implementations",
+              "kind": "function",
+              "lines": [
+                13,
+                22
+              ],
+              "score": 4.3675,
+              "retrieval_scores": {
+                "lexical": 4.367504119873047
+              }
+            },
+            {
+              "path": "tests/test_lexical.py",
+              "symbol": "test_split_identifier",
+              "kind": "function",
+              "lines": [
+                7,
+                9
+              ],
+              "score": 3.8954,
+              "retrieval_scores": {
+                "lexical": 3.895416736602783
+              }
+            },
+            {
+              "path": "tests/test_lexical.py",
+              "symbol": "test_tokenize_keeps_identifier_and_digits",
+              "kind": "function",
+              "lines": [
+                12,
+                14
+              ],
+              "score": 3.6088,
+              "retrieval_scores": {
+                "lexical": 3.608788013458252
+              }
+            }
+          ]
+        },
+        {
+          "id": "rank-fusion",
+          "query": "Where is reciprocal rank fusion implemented to merge multiple retrieval views?",
+          "expected": [
+            {
+              "path": "src/seraph/retrieval/fusion.py",
+              "symbols": [
+                "rrf",
+                "fuse"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 0.0,
+            "hit@5": 1.0,
+            "mrr": 0.3333333333333333,
+            "ndcg@5": 0.5,
+            "noise@5": 0.8,
+            "first_relevant_rank": 3
+          },
+          "results": [
+            {
+              "path": "src/seraph/types.py",
+              "symbol": "View",
+              "kind": "class",
+              "lines": [
+                43,
+                50
+              ],
+              "score": 5.2124,
+              "retrieval_scores": {
+                "lexical": 5.212447643280029
+              }
+            },
+            {
+              "path": "src/seraph/cli.py",
+              "symbol": "_render",
+              "kind": "function",
+              "lines": [
+                14,
+                32
+              ],
+              "score": 4.7668,
+              "retrieval_scores": {
+                "lexical": 4.766806602478027
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/fusion.py",
+              "symbol": "rrf",
+              "kind": "function",
+              "lines": [
+                35,
+                44
+              ],
+              "score": 4.7294,
+              "retrieval_scores": {
+                "lexical": 4.729430675506592
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "_retrieval_mode",
+              "kind": "function",
+              "lines": [
+                279,
+                288
+              ],
+              "score": 4.1667,
+              "retrieval_scores": {
+                "lexical": 4.16673469543457
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/dedup.py",
+              "symbol": "version_rank",
+              "kind": "function",
+              "lines": [
+                19,
+                23
+              ],
+              "score": 4.1102,
+              "retrieval_scores": {
+                "lexical": 4.110219955444336
+              }
+            },
+            {
+              "path": "src/seraph/config.py",
+              "symbol": "_deep_merge",
+              "kind": "function",
+              "lines": [
+                240,
+                244
+              ],
+              "score": 3.9955,
+              "retrieval_scores": {
+                "lexical": 3.9955391883850098
+              }
+            },
+            {
+              "path": "src/seraph/query/weights.py",
+              "symbol": "view_matrix",
+              "kind": "function",
+              "lines": [
+                77,
+                92
+              ],
+              "score": 3.739,
+              "retrieval_scores": {
+                "lexical": 3.739016056060791
+              }
+            },
+            {
+              "path": "src/seraph/evaluation/cli.py",
+              "symbol": "tune_adaptive",
+              "kind": "function",
+              "lines": [
+                359,
+                453
+              ],
+              "score": 3.7229,
+              "retrieval_scores": {
+                "lexical": 3.7229247093200684
+              }
+            },
+            {
+              "path": "src/seraph/evaluation/cli.py",
+              "symbol": "tune_structural",
+              "kind": "function",
+              "lines": [
+                327,
+                356
+              ],
+              "score": 3.5194,
+              "retrieval_scores": {
+                "lexical": 3.519366979598999
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/base.py",
+              "symbol": "BaseRetriever",
+              "kind": "class",
+              "lines": [
+                8,
+                22
+              ],
+              "score": 3.3949,
+              "retrieval_scores": {
+                "lexical": 3.394871711730957
+              }
+            }
+          ]
+        },
+        {
+          "id": "language-parsing",
+          "query": "Where does Seraph select the tree sitter grammar from a source file language?",
+          "expected": [
+            {
+              "path": "src/seraph/index.py",
+              "symbols": [
+                "_parser"
+              ]
+            }
+          ],
+          "metrics": {
+            "hit@1": 1.0,
+            "hit@5": 1.0,
+            "mrr": 1.0,
+            "ndcg@5": 1.0,
+            "noise@5": 0.8,
+            "first_relevant_rank": 1
+          },
+          "results": [
+            {
+              "path": "src/seraph/index.py",
+              "symbol": "_parser",
+              "kind": "function",
+              "lines": [
+                136,
+                164
+              ],
+              "score": 14.1236,
+              "retrieval_scores": {
+                "lexical": 14.123553276062012
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/structural.py",
+              "symbol": "_parser",
+              "kind": "function",
+              "lines": [
+                91,
+                96
+              ],
+              "score": 9.7439,
+              "retrieval_scores": {
+                "lexical": 9.743937492370605
+              }
+            },
+            {
+              "path": "src/seraph/index.py",
+              "symbol": "VersionedIndex",
+              "kind": "class",
+              "lines": [
+                287,
+                762
+              ],
+              "score": 6.4136,
+              "retrieval_scores": {
+                "lexical": 6.413599491119385
+              }
+            },
+            {
+              "path": "tests/test_lineage.py",
+              "symbol": "changes",
+              "kind": "function",
+              "lines": [
+                48,
+                50
+              ],
+              "score": 6.1916,
+              "retrieval_scores": {
+                "lexical": 6.191589832305908
+              }
+            },
+            {
+              "path": "src/seraph/server.py",
+              "symbol": "get_working_tree_status",
+              "kind": "function",
+              "lines": [
+                126,
+                130
+              ],
+              "score": 5.0223,
+              "retrieval_scores": {
+                "lexical": 5.022258758544922
+              }
+            },
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbol": "extract_refs",
+              "kind": "function",
+              "lines": [
+                74,
+                83
+              ],
+              "score": 4.8783,
+              "retrieval_scores": {
+                "lexical": 4.878288269042969
+              }
+            },
+            {
+              "path": "src/seraph/working_tree.py",
+              "symbol": "snapshot",
+              "kind": "function",
+              "lines": [
+                30,
+                74
+              ],
+              "score": 4.6852,
+              "retrieval_scores": {
+                "lexical": 4.685240745544434
+              }
+            },
+            {
+              "path": "tests/test_graph_builder.py",
+              "symbol": "test_typescript_graph",
+              "kind": "function",
+              "lines": [
+                141,
+                157
+              ],
+              "score": 4.6632,
+              "retrieval_scores": {
+                "lexical": 4.663217067718506
+              }
+            },
+            {
+              "path": "src/seraph/index.py",
+              "symbol": "_tree_chunks",
+              "kind": "function",
+              "lines": [
+                214,
+                278
+              ],
+              "score": 4.1832,
+              "retrieval_scores": {
+                "lexical": 4.183188438415527
+              }
+            },
+            {
+              "path": "src/seraph/graph/builder.py",
+              "symbol": "_tree_refs",
+              "kind": "function",
+              "lines": [
+                162,
+                285
+              ],
+              "score": 3.6236,
+              "retrieval_scores": {
+                "lexical": 3.6235549449920654
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

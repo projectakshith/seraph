@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import platform
 import random
+import subprocess
+import time
+from pathlib import Path
 
 import typer
 
 from seraph.evaluation.coir import load_apps, mteb_scores
 from seraph.evaluation.metrics import evaluate
+from seraph.evaluation.repo import aggregate, score_case
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -62,6 +68,133 @@ def run(
             f"r@10={m['recall@10']:.4f} r@100={m['recall@100']:.4f} "
             f"p50={m.get('latency_p50_ms', 0):.1f}ms"
         )
+
+
+@app.command("repo")
+def repo_eval(
+    repo: str,
+    cases: str = "experiments/repo_eval/seraph.jsonl",
+    config: list[str] = typer.Option([], "--config", help="retrieval config; repeat to compare modes"),
+    top_k: int = 10,
+    out: str | None = None,
+) -> None:
+    """Evaluate repository code search against a labeled JSONL query set."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    from seraph.config import SeraphConfig, load_config
+    from seraph.evaluation.metrics import latency_stats
+    from seraph.index import VersionedIndex
+    from seraph.service import search_index
+
+    if top_k < 5:
+        raise typer.BadParameter("top-k must be at least 5 to report hit@5 and ndcg@5")
+    cases_path = Path(cases)
+    raw = cases_path.read_bytes()
+    entries = []
+    for line_no, line in enumerate(raw.decode("utf-8").splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        try:
+            case = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise typer.BadParameter(f"{cases_path}:{line_no}: {exc}") from exc
+        if not isinstance(case, dict) or not isinstance(case.get("id"), str) or not case["id"].strip() \
+                or not isinstance(case.get("query"), str) or not case["query"].strip():
+            raise typer.BadParameter(f"{cases_path}:{line_no}: each case needs string id and query")
+        expected = case.get("expected")
+        if not isinstance(expected, list) or not expected or any(
+            not isinstance(item, dict) or not isinstance(item.get("path"), str)
+            for item in expected
+        ):
+            raise typer.BadParameter(f"{cases_path}:{line_no}: expected must list labeled paths")
+        entries.append(case)
+    if not entries:
+        raise typer.BadParameter(f"no query cases found in {cases_path}")
+    ids = [case["id"] for case in entries]
+    if len(ids) != len(set(ids)):
+        raise typer.BadParameter("query case ids must be unique")
+
+    repo_path = Path(repo).expanduser().resolve()
+    configs = [load_config(path) for path in config] if config else [SeraphConfig()]
+    source_hash = hashlib.sha256()
+    source_root = Path(__file__).resolve().parents[1]
+    for source_file in sorted(source_root.rglob("*.py")):
+        source_hash.update(source_file.relative_to(source_root).as_posix().encode())
+        source_hash.update(source_file.read_bytes())
+    with VersionedIndex(repo_path) as index:
+        stats = index.index_commit("HEAD")
+        commit = stats.commit
+        dirty = bool(subprocess.run(
+            ["git", "-C", str(repo_path), "status", "--porcelain", "--untracked-files=no"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip())
+        runs = []
+        for cfg in configs:
+            per_query = {}
+            latencies = []
+            cases_out = []
+            active_mode = "unknown"
+            for case in entries:
+                started = time.perf_counter()
+                response = search_index(index, case["query"], "HEAD", top_k, cfg=cfg)
+                active_mode = response["retrieval_mode"]
+                elapsed = (time.perf_counter() - started) * 1000
+                latencies.append(elapsed)
+                metrics = score_case(response["results"], case["expected"], min(5, top_k))
+                per_query[case["id"]] = metrics
+                cases_out.append({
+                    "id": case["id"], "query": case["query"], "expected": case["expected"],
+                    "metrics": metrics,
+                    "results": [
+                        {"path": row["path"], "symbol": row["symbol"], "kind": row["kind"],
+                         "lines": [row["start_line"], row["end_line"]], "score": row["score"],
+                         "retrieval_scores": row["retrieval_scores"]}
+                        for row in response["results"]
+                    ],
+                })
+            summary = aggregate(per_query)
+            summary.update(latency_stats(latencies))
+            try:
+                seraph_version = version("seraph")
+            except PackageNotFoundError:
+                seraph_version = "source"
+            config_json = cfg.model_dump_json()
+            runs.append({
+                "config": cfg.name,
+                "config_sha256": hashlib.sha256(config_json.encode()).hexdigest(),
+                "config_values": cfg.model_dump(mode="json"),
+                "retrieval_mode": active_mode,
+                "metrics": summary,
+                "per_query": cases_out,
+            })
+
+    output = {
+        "schema_version": 1,
+        "repo": str(repo_path),
+        "commit": commit,
+        "tracked_worktree_dirty": dirty,
+        "cases_file": str(cases_path.resolve()),
+        "cases_sha256": hashlib.sha256(raw).hexdigest(),
+        "seraph_source_sha256": source_hash.hexdigest(),
+        "case_count": len(entries),
+        "top_k": top_k,
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "seraph_version": seraph_version,
+        "runs": runs,
+    }
+    out_path = Path(out or f"experiments/results/repo_eval_{repo_path.name}_{commit[:8]}.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+    for run in runs:
+        metrics = run["metrics"]
+        typer.echo(
+            f"{run['config']} [{run['retrieval_mode']}] "
+            f"hit@1={metrics['hit@1']:.3f} hit@5={metrics['hit@5']:.3f} "
+            f"mrr={metrics['mrr']:.3f} ndcg@5={metrics['ndcg@5']:.3f} "
+            f"noise@5={metrics['noise@5']:.3f} p50={metrics['latency_p50_ms']:.1f}ms"
+        )
+    typer.echo(f"{len(entries)} queries at {commit[:12]} -> {out_path}")
 
 
 @app.command()

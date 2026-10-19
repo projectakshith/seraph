@@ -330,7 +330,11 @@ seraph-eval ablate [--skip-api]            # ablation ladder -> experiments/resu
 seraph-eval run experiments/configs/b9_structural.yaml --split dev_stdin
 seraph-eval ablate --final                 # once, at the very end (test split)
 seraph-eval submit --final                 # upload JSON (experiments/configs/submission.yaml)
+seraph-eval repo /path/to/repo             # evaluate experiments/repo_eval/seraph.jsonl
+seraph-eval repo /path/to/repo --config experiments/configs/b1_bm25.yaml --config experiments/configs/b3_hybrid_rrf.yaml
 ```
+
+Repository evaluation cases are JSONL records with an `id`, natural-language `query`, and labeled `expected` paths or symbols. The command records the repository commit, tracked worktree state, case-set hash, config hash, per-query rankings, accuracy, ranking quality, result noise and latency in `experiments/results/`. Keep labels in the case set rather than tuning them to fit a model's output.
 
 The Gemini key is read from `GEMINI_API_KEY`. On the free tier, a daily-quota error stops the affected rung and marks it `skipped (quota)` without failing the run.
 
