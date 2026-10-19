@@ -112,7 +112,7 @@ _TS_DECLS = {
     "lexical_declaration": "variable",
     "variable_declaration": "variable",
 }
-_TS_METHODS = {"method_definition", "public_field_definition", "field_definition"}
+_TS_METHODS = {"method_definition"}
 _GO_DECLS = {"function_declaration": "function", "method_declaration": "method", "type_declaration": "type"}
 _DECLS = {
     "c": {"function_definition": "function", "struct_specifier": "struct", "enum_specifier": "enum", "type_definition": "type"},
