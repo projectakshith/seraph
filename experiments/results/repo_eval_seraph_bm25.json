@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repo": "/Users/akshithrajesh/Developer/seraph",
-  "commit": "d51f519b9656c9fb7c197941de87ff857a155147",
+  "commit": "79579390d39dc20011c9fbff83cdd284a51521db",
   "tracked_worktree_dirty": true,
   "cases_file": "/Users/akshithrajesh/Developer/seraph/experiments/repo_eval/seraph.jsonl",
   "cases_sha256": "f37d736c32e8e4af010fab057c2c17fc5966d1c09998b75ee6daf14915ebc86f",
@@ -70,14 +70,14 @@
       },
       "retrieval_mode": "BM25",
       "metrics": {
-        "hit@1": 0.8888888888888888,
+        "hit@1": 1.0,
         "hit@5": 1.0,
-        "mrr": 0.925925925925926,
-        "ndcg@5": 0.8329288978015399,
-        "noise@5": 0.7111111111111111,
-        "latency_p50_ms": 13.725958007853478,
-        "latency_p95_ms": 177.2441002074628,
-        "latency_mean_ms": 44.0359907806851
+        "mrr": 1.0,
+        "ndcg@5": 0.936337404254139,
+        "noise@5": 0.6888888888888889,
+        "latency_p50_ms": 12.821583019103855,
+        "latency_p95_ms": 160.13006659341036,
+        "latency_mean_ms": 40.075675781635155
       },
       "per_query": [
         {
@@ -109,9 +109,9 @@
                 252,
                 258
               ],
-              "score": 10.8938,
+              "score": 10.9057,
               "retrieval_scores": {
-                "lexical": 10.893815994262695
+                "lexical": 10.905734062194824
               }
             },
             {
@@ -119,12 +119,12 @@
               "symbol": "test_change_context_keeps_search_evidence_when_compacting",
               "kind": "function",
               "lines": [
-                25,
-                50
+                35,
+                69
               ],
-              "score": 5.2114,
+              "score": 5.3538,
               "retrieval_scores": {
-                "lexical": 5.211438179016113
+                "lexical": 5.353753089904785
               }
             },
             {
@@ -132,12 +132,12 @@
               "symbol": "test_explicit_search_intent_prioritizes_matching_results",
               "kind": "function",
               "lines": [
-                53,
-                65
+                72,
+                84
               ],
-              "score": 5.0846,
+              "score": 5.0805,
               "retrieval_scores": {
-                "lexical": 5.084564685821533
+                "lexical": 5.080487251281738
               }
             },
             {
@@ -145,12 +145,12 @@
               "symbol": "test_explicit_search_intent_ranks_tests_and_implementations",
               "kind": "function",
               "lines": [
-                13,
-                22
+                14,
+                23
               ],
-              "score": 4.9565,
+              "score": 4.9581,
               "retrieval_scores": {
-                "lexical": 4.956528663635254
+                "lexical": 4.958119869232178
               }
             },
             {
@@ -161,22 +161,35 @@
                 148,
                 149
               ],
-              "score": 4.1732,
+              "score": 4.1971,
               "retrieval_scores": {
-                "lexical": 4.173183441162109
+                "lexical": 4.197052001953125
               }
             },
             {
-              "path": "src/seraph/server.py",
-              "symbol": "search_code",
+              "path": "tests/test_repo_eval.py",
+              "symbol": "test_repo_eval_matches_path_and_optional_symbol_labels",
               "kind": "function",
               "lines": [
-                64,
-                67
+                4,
+                8
               ],
-              "score": 3.6855,
+              "score": 3.9491,
               "retrieval_scores": {
-                "lexical": 3.6855127811431885
+                "lexical": 3.9491310119628906
+              }
+            },
+            {
+              "path": "tests/test_repo_eval.py",
+              "symbol": "test_repo_eval_scores_rank_and_noise",
+              "kind": "function",
+              "lines": [
+                11,
+                24
+              ],
+              "score": 3.9194,
+              "retrieval_scores": {
+                "lexical": 3.91935658454895
               }
             },
             {
@@ -187,22 +200,22 @@
                 48,
                 50
               ],
-              "score": 3.6407,
+              "score": 3.659,
               "retrieval_scores": {
-                "lexical": 3.6406731605529785
+                "lexical": 3.6589701175689697
               }
             },
             {
-              "path": "tests/test_service.py",
-              "symbol": "test_history_search_collapses_identical_code_across_versions",
+              "path": "src/seraph/server.py",
+              "symbol": "search_code",
               "kind": "function",
               "lines": [
-                126,
-                137
+                64,
+                67
               ],
-              "score": 3.4127,
+              "score": 3.5974,
               "retrieval_scores": {
-                "lexical": 3.4127423763275146
+                "lexical": 3.5973715782165527
               }
             },
             {
@@ -213,22 +226,9 @@
                 14,
                 32
               ],
-              "score": 3.3767,
+              "score": 3.3908,
               "retrieval_scores": {
-                "lexical": 3.376720428466797
-              }
-            },
-            {
-              "path": "tests/test_graph_builder.py",
-              "symbol": "repo",
-              "kind": "function",
-              "lines": [
-                45,
-                51
-              ],
-              "score": 3.3332,
-              "retrieval_scores": {
-                "lexical": 3.3332300186157227
+                "lexical": 3.3907880783081055
               }
             }
           ]
@@ -267,9 +267,9 @@
                 160,
                 173
               ],
-              "score": 5.4269,
+              "score": 5.4727,
               "retrieval_scores": {
-                "lexical": 5.426923751831055
+                "lexical": 5.472650527954102
               }
             },
             {
@@ -277,12 +277,12 @@
               "symbol": "change_impact",
               "kind": "function",
               "lines": [
-                214,
-                221
+                222,
+                229
               ],
-              "score": 4.8668,
+              "score": 4.9109,
               "retrieval_scores": {
-                "lexical": 4.866791725158691
+                "lexical": 4.910917282104492
               }
             },
             {
@@ -290,12 +290,12 @@
               "symbol": "prepare_change_context",
               "kind": "function",
               "lines": [
-                252,
-                389
+                260,
+                449
               ],
-              "score": 4.0984,
+              "score": 3.8695,
               "retrieval_scores": {
-                "lexical": 4.098414421081543
+                "lexical": 3.8695099353790283
               }
             },
             {
@@ -306,9 +306,9 @@
                 48,
                 50
               ],
-              "score": 2.879,
+              "score": 2.9017,
               "retrieval_scores": {
-                "lexical": 2.878962993621826
+                "lexical": 2.901662826538086
               }
             },
             {
@@ -319,9 +319,9 @@
                 315,
                 329
               ],
-              "score": 2.8026,
+              "score": 2.8257,
               "retrieval_scores": {
-                "lexical": 2.8025708198547363
+                "lexical": 2.825650453567505
               }
             },
             {
@@ -332,9 +332,9 @@
                 97,
                 117
               ],
-              "score": 2.7552,
+              "score": 2.7783,
               "retrieval_scores": {
-                "lexical": 2.755164861679077
+                "lexical": 2.778324842453003
               }
             },
             {
@@ -345,9 +345,9 @@
                 30,
                 86
               ],
-              "score": 2.7108,
+              "score": 2.7344,
               "retrieval_scores": {
-                "lexical": 2.7107725143432617
+                "lexical": 2.7343804836273193
               }
             },
             {
@@ -358,9 +358,9 @@
                 49,
                 86
               ],
-              "score": 2.6294,
+              "score": 2.6533,
               "retrieval_scores": {
-                "lexical": 2.6294398307800293
+                "lexical": 2.6533102989196777
               }
             },
             {
@@ -371,9 +371,9 @@
                 14,
                 32
               ],
-              "score": 2.5894,
+              "score": 2.6141,
               "retrieval_scores": {
-                "lexical": 2.58941912651062
+                "lexical": 2.6140899658203125
               }
             },
             {
@@ -381,12 +381,12 @@
               "symbol": "train_structural",
               "kind": "function",
               "lines": [
-                317,
-                324
+                450,
+                457
               ],
-              "score": 2.5075,
+              "score": 2.5304,
               "retrieval_scores": {
-                "lexical": 2.507512092590332
+                "lexical": 2.5304408073425293
               }
             }
           ]
@@ -432,9 +432,9 @@
                 104,
                 113
               ],
-              "score": 9.2409,
+              "score": 9.2965,
               "retrieval_scores": {
-                "lexical": 9.240936279296875
+                "lexical": 9.296478271484375
               }
             },
             {
@@ -445,9 +445,9 @@
                 126,
                 130
               ],
-              "score": 5.805,
+              "score": 5.849,
               "retrieval_scores": {
-                "lexical": 5.805047035217285
+                "lexical": 5.848979473114014
               }
             },
             {
@@ -458,9 +458,9 @@
                 30,
                 74
               ],
-              "score": 5.5773,
+              "score": 5.6217,
               "retrieval_scores": {
-                "lexical": 5.577264308929443
+                "lexical": 5.621679782867432
               }
             },
             {
@@ -471,9 +471,9 @@
                 95,
                 114
               ],
-              "score": 5.5145,
+              "score": 5.5335,
               "retrieval_scores": {
-                "lexical": 5.514479637145996
+                "lexical": 5.533490180969238
               }
             },
             {
@@ -484,9 +484,9 @@
                 133,
                 139
               ],
-              "score": 5.2099,
+              "score": 5.2302,
               "retrieval_scores": {
-                "lexical": 5.209920883178711
+                "lexical": 5.230234146118164
               }
             },
             {
@@ -497,9 +497,9 @@
                 20,
                 27
               ],
-              "score": 4.9944,
+              "score": 5.0377,
               "retrieval_scores": {
-                "lexical": 4.994442939758301
+                "lexical": 5.037714958190918
               }
             },
             {
@@ -510,9 +510,9 @@
                 176,
                 247
               ],
-              "score": 4.9168,
+              "score": 4.9407,
               "retrieval_scores": {
-                "lexical": 4.91679048538208
+                "lexical": 4.940711975097656
               }
             },
             {
@@ -523,9 +523,9 @@
                 19,
                 25
               ],
-              "score": 4.5144,
+              "score": 4.4944,
               "retrieval_scores": {
-                "lexical": 4.5143585205078125
+                "lexical": 4.4943647384643555
               }
             },
             {
@@ -536,9 +536,9 @@
                 32,
                 37
               ],
-              "score": 4.4299,
+              "score": 4.4111,
               "retrieval_scores": {
-                "lexical": 4.429944038391113
+                "lexical": 4.411050796508789
               }
             },
             {
@@ -549,9 +549,9 @@
                 22,
                 27
               ],
-              "score": 4.4164,
+              "score": 4.3977,
               "retrieval_scores": {
-                "lexical": 4.416399955749512
+                "lexical": 4.397732734680176
               }
             }
           ]
@@ -584,9 +584,9 @@
                 191,
                 237
               ],
-              "score": 9.1645,
+              "score": 9.1887,
               "retrieval_scores": {
-                "lexical": 9.164485931396484
+                "lexical": 9.188671112060547
               }
             },
             {
@@ -597,9 +597,9 @@
                 108,
                 112
               ],
-              "score": 7.2525,
+              "score": 7.2165,
               "retrieval_scores": {
-                "lexical": 7.252467155456543
+                "lexical": 7.216518878936768
               }
             },
             {
@@ -610,9 +610,9 @@
                 122,
                 145
               ],
-              "score": 6.2643,
+              "score": 6.2708,
               "retrieval_scores": {
-                "lexical": 6.264286041259766
+                "lexical": 6.270752906799316
               }
             },
             {
@@ -623,9 +623,9 @@
                 69,
                 76
               ],
-              "score": 5.3055,
+              "score": 5.2796,
               "retrieval_scores": {
-                "lexical": 5.30551815032959
+                "lexical": 5.279640197753906
               }
             },
             {
@@ -636,9 +636,9 @@
                 30,
                 66
               ],
-              "score": 5.0402,
+              "score": 5.0193,
               "retrieval_scores": {
-                "lexical": 5.040217399597168
+                "lexical": 5.019314765930176
               }
             },
             {
@@ -649,9 +649,9 @@
                 148,
                 178
               ],
-              "score": 4.7956,
+              "score": 4.782,
               "retrieval_scores": {
-                "lexical": 4.795557975769043
+                "lexical": 4.782001972198486
               }
             },
             {
@@ -662,9 +662,9 @@
                 107,
                 113
               ],
-              "score": 4.6048,
+              "score": 4.648,
               "retrieval_scores": {
-                "lexical": 4.604840278625488
+                "lexical": 4.647970199584961
               }
             },
             {
@@ -675,9 +675,9 @@
                 287,
                 762
               ],
-              "score": 4.3472,
+              "score": 4.3871,
               "retrieval_scores": {
-                "lexical": 4.3472089767456055
+                "lexical": 4.387119770050049
               }
             },
             {
@@ -688,9 +688,9 @@
                 67,
                 96
               ],
-              "score": 4.3338,
+              "score": 4.3026,
               "retrieval_scores": {
-                "lexical": 4.333832740783691
+                "lexical": 4.302565574645996
               }
             },
             {
@@ -701,9 +701,9 @@
                 99,
                 158
               ],
-              "score": 4.0715,
+              "score": 4.1098,
               "retrieval_scores": {
-                "lexical": 4.071462154388428
+                "lexical": 4.109789848327637
               }
             }
           ]
@@ -742,9 +742,9 @@
                 92,
                 105
               ],
-              "score": 8.8539,
+              "score": 8.8917,
               "retrieval_scores": {
-                "lexical": 8.853931427001953
+                "lexical": 8.891674041748047
               }
             },
             {
@@ -755,9 +755,9 @@
                 148,
                 178
               ],
-              "score": 5.8157,
+              "score": 5.7954,
               "retrieval_scores": {
-                "lexical": 5.815723419189453
+                "lexical": 5.795374870300293
               }
             },
             {
@@ -768,9 +768,9 @@
                 37,
                 50
               ],
-              "score": 5.1022,
+              "score": 5.0851,
               "retrieval_scores": {
-                "lexical": 5.102226257324219
+                "lexical": 5.085108757019043
               }
             },
             {
@@ -781,9 +781,9 @@
                 135,
                 145
               ],
-              "score": 5.0835,
+              "score": 5.0493,
               "retrieval_scores": {
-                "lexical": 5.083456993103027
+                "lexical": 5.049319267272949
               }
             },
             {
@@ -794,9 +794,9 @@
                 122,
                 145
               ],
-              "score": 4.4628,
+              "score": 4.438,
               "retrieval_scores": {
-                "lexical": 4.4627604484558105
+                "lexical": 4.43799352645874
               }
             },
             {
@@ -807,9 +807,9 @@
                 39,
                 47
               ],
-              "score": 4.0697,
+              "score": 4.0778,
               "retrieval_scores": {
-                "lexical": 4.069723606109619
+                "lexical": 4.0778422355651855
               }
             },
             {
@@ -820,9 +820,9 @@
                 252,
                 258
               ],
-              "score": 3.9767,
+              "score": 3.9995,
               "retrieval_scores": {
-                "lexical": 3.9766669273376465
+                "lexical": 3.999462842941284
               }
             },
             {
@@ -833,9 +833,9 @@
                 82,
                 89
               ],
-              "score": 3.802,
+              "score": 3.7971,
               "retrieval_scores": {
-                "lexical": 3.8019509315490723
+                "lexical": 3.7971348762512207
               }
             },
             {
@@ -846,22 +846,22 @@
                 96,
                 130
               ],
-              "score": 3.4268,
+              "score": 3.4503,
               "retrieval_scores": {
-                "lexical": 3.4268369674682617
+                "lexical": 3.4503395557403564
               }
             },
             {
-              "path": "src/seraph/graph/builder.py",
-              "symbol": "build_graph",
+              "path": "src/seraph/graph/traversal.py",
+              "symbol": "direction_for",
               "kind": "function",
               "lines": [
-                461,
-                485
+                27,
+                36
               ],
-              "score": 3.0418,
+              "score": 3.0282,
               "retrieval_scores": {
-                "lexical": 3.04178524017334
+                "lexical": 3.0281553268432617
               }
             }
           ]
@@ -901,9 +901,9 @@
                 58,
                 77
               ],
-              "score": 12.7609,
+              "score": 12.8296,
               "retrieval_scores": {
-                "lexical": 12.760923385620117
+                "lexical": 12.829551696777344
               }
             },
             {
@@ -914,9 +914,9 @@
                 33,
                 35
               ],
-              "score": 6.6497,
+              "score": 6.6633,
               "retrieval_scores": {
-                "lexical": 6.64971923828125
+                "lexical": 6.663305282592773
               }
             },
             {
@@ -927,9 +927,9 @@
                 160,
                 174
               ],
-              "score": 5.5918,
+              "score": 5.6122,
               "retrieval_scores": {
-                "lexical": 5.591830730438232
+                "lexical": 5.6121697425842285
               }
             },
             {
@@ -940,9 +940,9 @@
                 80,
                 91
               ],
-              "score": 5.0935,
+              "score": 5.1037,
               "retrieval_scores": {
-                "lexical": 5.093476295471191
+                "lexical": 5.10369873046875
               }
             },
             {
@@ -953,9 +953,9 @@
                 141,
                 157
               ],
-              "score": 5.0796,
+              "score": 5.0974,
               "retrieval_scores": {
-                "lexical": 5.0795793533325195
+                "lexical": 5.097400665283203
               }
             },
             {
@@ -966,9 +966,9 @@
                 131,
                 138
               ],
-              "score": 5.0166,
+              "score": 5.0314,
               "retrieval_scores": {
-                "lexical": 5.016591548919678
+                "lexical": 5.031354904174805
               }
             },
             {
@@ -979,9 +979,9 @@
                 94,
                 102
               ],
-              "score": 4.9393,
+              "score": 4.9458,
               "retrieval_scores": {
-                "lexical": 4.939320087432861
+                "lexical": 4.945802688598633
               }
             },
             {
@@ -992,9 +992,9 @@
                 54,
                 55
               ],
-              "score": 4.376,
+              "score": 4.3549,
               "retrieval_scores": {
-                "lexical": 4.376047611236572
+                "lexical": 4.35490083694458
               }
             },
             {
@@ -1005,9 +1005,9 @@
                 16,
                 22
               ],
-              "score": 4.0946,
+              "score": 4.0789,
               "retrieval_scores": {
-                "lexical": 4.094626426696777
+                "lexical": 4.078914642333984
               }
             },
             {
@@ -1018,9 +1018,9 @@
                 50,
                 55
               ],
-              "score": 3.9162,
+              "score": 3.9054,
               "retrieval_scores": {
-                "lexical": 3.916189193725586
+                "lexical": 3.9054386615753174
               }
             }
           ]
@@ -1059,9 +1059,22 @@
                 17,
                 31
               ],
-              "score": 11.7461,
+              "score": 11.6483,
               "retrieval_scores": {
-                "lexical": 11.74609088897705
+                "lexical": 11.64831829071045
+              }
+            },
+            {
+              "path": "tests/test_service.py",
+              "symbol": "test_retrieval_mode_reports_active_graph_and_reranker",
+              "kind": "function",
+              "lines": [
+                26,
+                32
+              ],
+              "score": 7.3315,
+              "retrieval_scores": {
+                "lexical": 7.33150053024292
               }
             },
             {
@@ -1072,9 +1085,9 @@
                 51,
                 72
               ],
-              "score": 7.1793,
+              "score": 7.1148,
               "retrieval_scores": {
-                "lexical": 7.179315567016602
+                "lexical": 7.114830493927002
               }
             },
             {
@@ -1082,12 +1095,12 @@
               "symbol": "test_change_context_keeps_search_evidence_when_compacting",
               "kind": "function",
               "lines": [
-                25,
-                50
+                35,
+                69
               ],
-              "score": 7.0734,
+              "score": 6.3245,
               "retrieval_scores": {
-                "lexical": 7.073360919952393
+                "lexical": 6.324545383453369
               }
             },
             {
@@ -1095,12 +1108,12 @@
               "symbol": "test_explicit_search_intent_prioritizes_matching_results",
               "kind": "function",
               "lines": [
-                53,
-                65
+                72,
+                84
               ],
-              "score": 5.4527,
+              "score": 5.4554,
               "retrieval_scores": {
-                "lexical": 5.452689170837402
+                "lexical": 5.455436706542969
               }
             },
             {
@@ -1108,12 +1121,12 @@
               "symbol": "test_history_search_collapses_identical_code_across_versions",
               "kind": "function",
               "lines": [
-                126,
-                137
+                145,
+                156
               ],
-              "score": 5.0375,
+              "score": 4.9818,
               "retrieval_scores": {
-                "lexical": 5.037524700164795
+                "lexical": 4.981775760650635
               }
             },
             {
@@ -1124,9 +1137,9 @@
                 48,
                 50
               ],
-              "score": 4.8785,
+              "score": 4.9064,
               "retrieval_scores": {
-                "lexical": 4.878487586975098
+                "lexical": 4.906418800354004
               }
             },
             {
@@ -1137,9 +1150,9 @@
                 4,
                 6
               ],
-              "score": 4.4611,
+              "score": 4.4772,
               "retrieval_scores": {
-                "lexical": 4.46112585067749
+                "lexical": 4.4772114753723145
               }
             },
             {
@@ -1147,38 +1160,25 @@
               "symbol": "test_explicit_search_intent_ranks_tests_and_implementations",
               "kind": "function",
               "lines": [
-                13,
-                22
+                14,
+                23
               ],
-              "score": 4.3675,
+              "score": 4.3654,
               "retrieval_scores": {
-                "lexical": 4.367504119873047
+                "lexical": 4.365353584289551
               }
             },
             {
-              "path": "tests/test_lexical.py",
-              "symbol": "test_split_identifier",
+              "path": "tests/test_repo_eval.py",
+              "symbol": "test_repo_eval_matches_path_and_optional_symbol_labels",
               "kind": "function",
               "lines": [
-                7,
-                9
+                4,
+                8
               ],
-              "score": 3.8954,
+              "score": 4.1716,
               "retrieval_scores": {
-                "lexical": 3.895416736602783
-              }
-            },
-            {
-              "path": "tests/test_lexical.py",
-              "symbol": "test_tokenize_keeps_identifier_and_digits",
-              "kind": "function",
-              "lines": [
-                12,
-                14
-              ],
-              "score": 3.6088,
-              "retrieval_scores": {
-                "lexical": 3.608788013458252
+                "lexical": 4.171575546264648
               }
             }
           ]
@@ -1196,14 +1196,40 @@
             }
           ],
           "metrics": {
-            "hit@1": 0.0,
+            "hit@1": 1.0,
             "hit@5": 1.0,
-            "mrr": 0.3333333333333333,
-            "ndcg@5": 0.5,
-            "noise@5": 0.8,
-            "first_relevant_rank": 3
+            "mrr": 1.0,
+            "ndcg@5": 1.4306765580733931,
+            "noise@5": 0.6,
+            "first_relevant_rank": 1
           },
           "results": [
+            {
+              "path": "src/seraph/retrieval/fusion.py",
+              "symbol": "rrf",
+              "kind": "function",
+              "lines": [
+                35,
+                45
+              ],
+              "score": 10.0384,
+              "retrieval_scores": {
+                "lexical": 10.038385391235352
+              }
+            },
+            {
+              "path": "src/seraph/service.py",
+              "symbol": "_retrieval_mode",
+              "kind": "function",
+              "lines": [
+                279,
+                296
+              ],
+              "score": 5.8699,
+              "retrieval_scores": {
+                "lexical": 5.8699164390563965
+              }
+            },
             {
               "path": "src/seraph/types.py",
               "symbol": "View",
@@ -1212,9 +1238,22 @@
                 43,
                 50
               ],
-              "score": 5.2124,
+              "score": 5.1443,
               "retrieval_scores": {
-                "lexical": 5.212447643280029
+                "lexical": 5.144272804260254
+              }
+            },
+            {
+              "path": "src/seraph/retrieval/fusion.py",
+              "symbol": "fuse",
+              "kind": "function",
+              "lines": [
+                74,
+                93
+              ],
+              "score": 4.8041,
+              "retrieval_scores": {
+                "lexical": 4.804061412811279
               }
             },
             {
@@ -1225,35 +1264,22 @@
                 14,
                 32
               ],
-              "score": 4.7668,
+              "score": 4.6781,
               "retrieval_scores": {
-                "lexical": 4.766806602478027
+                "lexical": 4.678069114685059
               }
             },
             {
-              "path": "src/seraph/retrieval/fusion.py",
-              "symbol": "rrf",
-              "kind": "function",
-              "lines": [
-                35,
-                44
-              ],
-              "score": 4.7294,
-              "retrieval_scores": {
-                "lexical": 4.729430675506592
-              }
-            },
-            {
-              "path": "src/seraph/service.py",
+              "path": "src/seraph/context_tools.py",
               "symbol": "_retrieval_mode",
               "kind": "function",
               "lines": [
-                279,
-                288
+                128,
+                145
               ],
-              "score": 4.1667,
+              "score": 4.6085,
               "retrieval_scores": {
-                "lexical": 4.16673469543457
+                "lexical": 4.608476161956787
               }
             },
             {
@@ -1264,9 +1290,9 @@
                 19,
                 23
               ],
-              "score": 4.1102,
+              "score": 3.936,
               "retrieval_scores": {
-                "lexical": 4.110219955444336
+                "lexical": 3.9360220432281494
               }
             },
             {
@@ -1277,9 +1303,9 @@
                 240,
                 244
               ],
-              "score": 3.9955,
+              "score": 3.8065,
               "retrieval_scores": {
-                "lexical": 3.9955391883850098
+                "lexical": 3.8065030574798584
               }
             },
             {
@@ -1290,9 +1316,9 @@
                 77,
                 92
               ],
-              "score": 3.739,
+              "score": 3.6891,
               "retrieval_scores": {
-                "lexical": 3.739016056060791
+                "lexical": 3.6891050338745117
               }
             },
             {
@@ -1300,38 +1326,12 @@
               "symbol": "tune_adaptive",
               "kind": "function",
               "lines": [
-                359,
-                453
+                492,
+                586
               ],
-              "score": 3.7229,
+              "score": 3.6837,
               "retrieval_scores": {
-                "lexical": 3.7229247093200684
-              }
-            },
-            {
-              "path": "src/seraph/evaluation/cli.py",
-              "symbol": "tune_structural",
-              "kind": "function",
-              "lines": [
-                327,
-                356
-              ],
-              "score": 3.5194,
-              "retrieval_scores": {
-                "lexical": 3.519366979598999
-              }
-            },
-            {
-              "path": "src/seraph/retrieval/base.py",
-              "symbol": "BaseRetriever",
-              "kind": "class",
-              "lines": [
-                8,
-                22
-              ],
-              "score": 3.3949,
-              "retrieval_scores": {
-                "lexical": 3.394871711730957
+                "lexical": 3.6837007999420166
               }
             }
           ]
@@ -1364,9 +1364,9 @@
                 136,
                 164
               ],
-              "score": 14.1236,
+              "score": 14.2192,
               "retrieval_scores": {
-                "lexical": 14.123553276062012
+                "lexical": 14.219162940979004
               }
             },
             {
@@ -1377,9 +1377,9 @@
                 91,
                 96
               ],
-              "score": 9.7439,
+              "score": 9.8105,
               "retrieval_scores": {
-                "lexical": 9.743937492370605
+                "lexical": 9.810477256774902
               }
             },
             {
@@ -1390,9 +1390,9 @@
                 287,
                 762
               ],
-              "score": 6.4136,
+              "score": 6.4909,
               "retrieval_scores": {
-                "lexical": 6.413599491119385
+                "lexical": 6.490877151489258
               }
             },
             {
@@ -1403,9 +1403,9 @@
                 48,
                 50
               ],
-              "score": 6.1916,
+              "score": 6.2383,
               "retrieval_scores": {
-                "lexical": 6.191589832305908
+                "lexical": 6.2382917404174805
               }
             },
             {
@@ -1416,9 +1416,9 @@
                 126,
                 130
               ],
-              "score": 5.0223,
+              "score": 5.0153,
               "retrieval_scores": {
-                "lexical": 5.022258758544922
+                "lexical": 5.015289306640625
               }
             },
             {
@@ -1429,9 +1429,9 @@
                 74,
                 83
               ],
-              "score": 4.8783,
+              "score": 4.923,
               "retrieval_scores": {
-                "lexical": 4.878288269042969
+                "lexical": 4.92298698425293
               }
             },
             {
@@ -1442,9 +1442,9 @@
                 30,
                 74
               ],
-              "score": 4.6852,
+              "score": 4.722,
               "retrieval_scores": {
-                "lexical": 4.685240745544434
+                "lexical": 4.722018718719482
               }
             },
             {
@@ -1455,9 +1455,9 @@
                 141,
                 157
               ],
-              "score": 4.6632,
+              "score": 4.7036,
               "retrieval_scores": {
-                "lexical": 4.663217067718506
+                "lexical": 4.703601360321045
               }
             },
             {
@@ -1468,9 +1468,9 @@
                 214,
                 278
               ],
-              "score": 4.1832,
+              "score": 4.2301,
               "retrieval_scores": {
-                "lexical": 4.183188438415527
+                "lexical": 4.230136871337891
               }
             },
             {
@@ -1481,9 +1481,9 @@
                 162,
                 285
               ],
-              "score": 3.6236,
+              "score": 3.648,
               "retrieval_scores": {
-                "lexical": 3.6235549449920654
+                "lexical": 3.6479573249816895
               }
             }
           ]
