@@ -1,3 +1,4 @@
+import json
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,7 +8,7 @@ import pytest
 from seraph.config import SeraphConfig
 from seraph.context_tools import prepare_change_context
 from seraph.index import VersionedIndex
-from seraph.service import IndexChunkStore, _apply_intent_ranking, search_index
+from seraph.service import IndexChunkStore, _apply_intent_ranking, _retrieval_mode, search_index
 
 
 def test_explicit_search_intent_ranks_tests_and_implementations():
@@ -20,6 +21,15 @@ def test_explicit_search_intent_ranks_tests_and_implementations():
     assert _apply_intent_ranking("find the tests", results) == "tests"
     assert results == [test_hit, impl_hit]
     assert _apply_intent_ranking("how does storage behave", results) is None
+
+
+def test_retrieval_mode_reports_active_graph_and_reranker():
+    cfg = SeraphConfig()
+    cfg.retrieval.use_graph_expansion = True
+    cfg.retrieval.use_reranker = True
+    cfg.retrieval.reranker_model = "test-ranker"
+
+    assert _retrieval_mode(cfg) == "BM25+graph+rerank:test-ranker+fusion:rrf"
 
 
 def test_change_context_keeps_search_evidence_when_compacting(tmp_path):
@@ -44,10 +54,19 @@ def test_change_context_keeps_search_evidence_when_compacting(tmp_path):
         pack = prepare_change_context(
             index, "find the implementation that persists session state to storage", scope="head", max_chars=1000
         )
+        compact = prepare_change_context(
+            index, "find the implementation that persists session state", scope="head", max_chars=400
+        )
+        with pytest.raises(ValueError, match="minimum evidence pack"):
+            prepare_change_context(index, "find storage", scope="head", max_chars=256)
 
     assert pack["search_evidence"]
     assert pack["retrieval_mode"] == "BM25"
     assert pack["char_count"] <= 1000
+
+    assert compact["search_evidence"]
+    assert compact["truncated"]
+    assert compact["char_count"] == len(json.dumps(compact, ensure_ascii=False)) <= 400
 
 
 def test_explicit_search_intent_prioritizes_matching_results(repo):

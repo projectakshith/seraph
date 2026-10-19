@@ -134,6 +134,14 @@ def _retrieval_mode() -> str:
         enabled.append(f"dense:{retrieval.dense_model}")
     if retrieval.use_structural:
         enabled.append("structural")
+    if retrieval.use_graph_expansion:
+        enabled.append("graph")
+    if retrieval.use_evolution:
+        enabled.append("evolution")
+    if retrieval.use_reranker:
+        enabled.append(f"rerank:{retrieval.reranker_model}")
+    if len(enabled) > 1:
+        enabled.append(f"fusion:{retrieval.fusion}")
     return "+".join(enabled) if enabled else "no retrieval views enabled"
 
 
@@ -252,6 +260,8 @@ def _repo_map(chunks, path_prefix: str | None, max_files: int, max_chars: int):
 def prepare_change_context(index: VersionedIndex, task: str, scope: str = "worktree",
                            max_chars: int = 12000) -> dict[str, Any]:
     """Build a compact evidence pack; max_chars bounds output while the agent manages its token budget."""
+    if max_chars < 1:
+        raise ValueError("max_chars must be positive")
     view = snapshot(index) if scope == "worktree" else None
     if view is None:
         base = index.index_commit("HEAD").commit
@@ -385,5 +395,55 @@ def prepare_change_context(index: VersionedIndex, task: str, scope: str = "workt
             pack["task_truncated"] = True
         else:
             break
-    pack["char_count"] = size()
+
+    def exact_size() -> int:
+        pack["char_count"] = 0
+        for _ in range(4):
+            count = len(json.dumps(pack, ensure_ascii=False))
+            if pack["char_count"] == count:
+                return count
+            pack["char_count"] = count
+        return len(json.dumps(pack, ensure_ascii=False))
+
+    if exact_size() > max_chars:
+        first = pack["search_evidence"][:1]
+        compact_evidence = []
+        for result in first:
+            compact_evidence.append({
+                "path": result["path"], "symbol": result["symbol"], "kind": result["kind"],
+                "lines": result["lines"], "score": result["score"],
+                "retrieval_scores": result["retrieval_scores"], "text": result["text"][:120],
+            })
+        pack = {
+            "task": pack["task"][:240], "scope": scope, "base_commit": base,
+            "changed_path_count": changed_path_count, "retrieval_mode": _retrieval_mode(),
+            "search_evidence": compact_evidence, "truncated": True,
+            "expand_hint": "Use targeted Seraph tools to expand this evidence.", "char_count": 0,
+        }
+        exact_size()
+        while exact_size() > max_chars:
+            evidence = pack["search_evidence"]
+            if evidence and evidence[0]["text"]:
+                text = evidence[0]["text"]
+                evidence[0]["text"] = text[:len(text) // 2]
+            elif evidence and evidence[0]["retrieval_scores"]:
+                evidence[0]["retrieval_scores"] = {}
+            elif pack["expand_hint"]:
+                pack["expand_hint"] = ""
+            elif len(pack["task"]) > 20:
+                pack["task"] = pack["task"][:max(20, len(pack["task"]) // 2)]
+            elif evidence and "kind" in evidence[0]:
+                evidence[0].pop("kind")
+            elif evidence and "score" in evidence[0]:
+                evidence[0].pop("score")
+            elif evidence and "lines" in evidence[0]:
+                evidence[0].pop("lines")
+            elif evidence and "symbol" in evidence[0]:
+                evidence[0].pop("symbol")
+            elif pack["changed_path_count"]:
+                pack["changed_path_count"] = 0
+            else:
+                minimum = exact_size()
+                raise ValueError(f"max_chars is too small for the minimum evidence pack ({minimum} characters)")
+        exact_size()
     return pack

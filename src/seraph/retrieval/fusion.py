@@ -33,6 +33,7 @@ def _emit(chunks: dict[str, Chunk], raw: dict[str, dict[str, float]], fused: dic
 
 
 def rrf(runs: ViewHits, k: int = 60, weights: Mapping[str, float] | None = None) -> list[ScoredChunk]:
+    """Combine ranked retrieval views with reciprocal rank fusion (RRF)."""
     chunks, raw = _collect(runs)
     fused: dict[str, float] = dict.fromkeys(chunks, 0.0)
     for view, hits in runs.items():
@@ -77,6 +78,7 @@ def fuse(
     rrf_k: int = 60,
     norm: Norm = "minmax",
 ) -> list[ScoredChunk]:
+    """Merge lexical, semantic, structural, graph, and evolution result rankings."""
     runs = {v: h for v, h in runs.items() if h is not None}
     if method == "none" or len(runs) == 1:
         if len(runs) != 1:

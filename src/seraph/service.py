@@ -285,6 +285,14 @@ def _retrieval_mode(cfg: SeraphConfig) -> str:
         views.append(f"dense:{retrieval.dense_model}")
     if retrieval.use_structural:
         views.append("structural")
+    if retrieval.use_graph_expansion:
+        views.append("graph")
+    if retrieval.use_evolution:
+        views.append("evolution")
+    if retrieval.use_reranker:
+        views.append(f"rerank:{retrieval.reranker_model}")
+    if len(views) > 1:
+        views.append(f"fusion:{retrieval.fusion}")
     return "+".join(views) if views else "no retrieval views enabled"
 
 
