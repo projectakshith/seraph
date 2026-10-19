@@ -20,7 +20,21 @@ from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 
-SUPPORTED_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go"}
+_LANGUAGE_SUFFIXES = {
+    ".py": "python", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+    ".ts": "typescript", ".tsx": "tsx", ".mts": "typescript", ".cts": "typescript", ".go": "go",
+    ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp",
+    ".hh": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp", ".java": "java", ".cs": "c_sharp",
+    ".rs": "rust", ".php": "php", ".rb": "ruby", ".rake": "ruby",
+    ".gemspec": "ruby", ".swift": "swift", ".kt": "kotlin", ".kts": "kotlin",
+    ".sh": "bash", ".bash": "bash", ".dart": "dart", ".lua": "lua",
+    ".sql": "sql", ".f": "fortran", ".for": "fortran", ".f90": "fortran",
+    ".f95": "fortran", ".f03": "fortran", ".f08": "fortran",
+    ".scala": "scala", ".sc": "scala", ".sbt": "scala",
+}
+SUPPORTED_SUFFIXES = set(_LANGUAGE_SUFFIXES)
+_LEGACY_SUPPORTED_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go"}
+_NEW_LANGUAGE_SUFFIXES = SUPPORTED_SUFFIXES - _LEGACY_SUPPORTED_SUFFIXES
 MAX_FILE_BYTES = 1_000_000
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9]*|\d+")
 
@@ -65,8 +79,7 @@ def _tokens(value: str) -> list[str]:
 
 def _language(path: str) -> str:
     suffix = Path(path).suffix.lower()
-    return {".py": "python", ".js": "javascript", ".jsx": "javascript",
-            ".ts": "typescript", ".tsx": "typescript", ".go": "go"}[suffix]
+    return _LANGUAGE_SUFFIXES[suffix]
 
 
 def _python_chunks(text: str) -> list[tuple[str | None, str, int, int, str]]:
@@ -101,24 +114,54 @@ _TS_DECLS = {
 }
 _TS_METHODS = {"method_definition", "public_field_definition", "field_definition"}
 _GO_DECLS = {"function_declaration": "function", "method_declaration": "method", "type_declaration": "type"}
+_DECLS = {
+    "c": {"function_definition": "function", "struct_specifier": "struct", "enum_specifier": "enum", "type_definition": "type"},
+    "cpp": {"function_definition": "function", "class_specifier": "class", "struct_specifier": "struct", "enum_specifier": "enum", "alias_declaration": "type", "type_definition": "type"},
+    "java": {"class_declaration": "class", "interface_declaration": "interface", "enum_declaration": "enum", "record_declaration": "class", "method_declaration": "method", "constructor_declaration": "method"},
+    "c_sharp": {"class_declaration": "class", "struct_declaration": "struct", "interface_declaration": "interface", "enum_declaration": "enum", "record_declaration": "class", "method_declaration": "method", "constructor_declaration": "method", "local_function_statement": "function"},
+    "rust": {"function_item": "function", "struct_item": "struct", "enum_item": "enum", "trait_item": "interface", "type_item": "type", "impl_item": "impl", "mod_item": "module", "macro_definition": "macro"},
+    "php": {"class_declaration": "class", "interface_declaration": "interface", "trait_declaration": "trait", "enum_declaration": "enum", "function_definition": "function", "method_declaration": "method"},
+    "ruby": {"class": "class", "module": "module", "method": "method", "singleton_method": "method"},
+    "swift": {"class_declaration": "class", "protocol_declaration": "interface", "function_declaration": "function", "enum_declaration": "enum", "struct_declaration": "struct", "typealias_declaration": "type"},
+    "kotlin": {"class_declaration": "class", "object_declaration": "object", "function_declaration": "function", "type_alias": "type"},
+    "bash": {"function_definition": "function"},
+    "dart": {"class_definition": "class", "enum_declaration": "enum", "mixin_declaration": "mixin", "extension_declaration": "extension", "function_signature": "function", "method_signature": "method"},
+    "lua": {"function_declaration": "function"},
+    "sql": {"create_table": "table", "create_view": "view", "create_function": "function", "create_procedure": "procedure"},
+    "fortran": {"subroutine": "function", "function": "function", "module": "module", "program": "program"},
+    "scala": {"class_definition": "class", "trait_definition": "interface", "object_definition": "object", "function_definition": "function", "type_definition": "type"},
+}
 
 
 @cache
 def _parser(language: str):
     from tree_sitter import Language, Parser
 
-    if language == "go":
+    if language == "python":
+        import tree_sitter_python as grammar
+        language_obj = grammar.language()
+    elif language == "go":
         import tree_sitter_go as grammar
-
-        return Parser(Language(grammar.language()))
-    if language == "javascript":
+        language_obj = grammar.language()
+    elif language == "javascript":
         import tree_sitter_javascript as grammar
+        language_obj = grammar.language()
+    elif language in {"typescript", "tsx"}:
+        import tree_sitter_typescript as grammar
+        language_obj = grammar.language_tsx() if language == "tsx" else grammar.language_typescript()
+    else:
+        import importlib
 
-        return Parser(Language(grammar.language()))
-    import tree_sitter_typescript as grammar
-
-    tsx = language == "tsx"
-    return Parser(Language(grammar.language_tsx() if tsx else grammar.language_typescript()))
+        modules = {
+            "c": "c", "cpp": "cpp", "java": "java", "c_sharp": "c_sharp",
+            "rust": "rust", "php": "php", "ruby": "ruby", "swift": "swift",
+            "kotlin": "kotlin", "bash": "bash", "dart": "dart", "lua": "lua",
+            "sql": "sql", "fortran": "fortran", "scala": "scala",
+        }
+        grammar = importlib.import_module(f"tree_sitter_{modules[language]}")
+        factory = getattr(grammar, "language_php_only", None) if language == "php" else None
+        language_obj = (factory or grammar.language)()
+    return Parser(Language(language_obj))
 
 
 def _node_name(node) -> str | None:
@@ -130,6 +173,27 @@ def _node_name(node) -> str | None:
                 break
     if name is None and node.type == "method_declaration":
         name = node.child_by_field_name("name")
+    if name is None and node.type in {"function_definition", "function_declarator"}:
+        name = node.child_by_field_name("declarator")
+        while name is not None and name.type not in {"identifier", "field_identifier", "qualified_identifier"}:
+            next_name = name.child_by_field_name("declarator")
+            if next_name is None:
+                candidates = [c for c in name.named_children if c.type in {"identifier", "field_identifier", "qualified_identifier"}]
+                next_name = candidates[-1] if candidates else None
+            name = next_name
+    if name is None and node.type == "impl_item":
+        name = node.child_by_field_name("type")
+    if name is None and node.type in {"function_signature", "method_signature"}:
+        name = next((n.child_by_field_name("name") for n in node.named_children
+                     if n.type == "function_signature" and n.child_by_field_name("name") is not None), None)
+    if name is None and node.type in {"create_table", "create_view", "create_function", "create_procedure"}:
+        reference = next((n for n in _walk(node) if n.type == "object_reference"), None)
+        name = reference.child_by_field_name("name") if reference is not None else None
+    if name is None and node.type in {"module", "program", "subroutine", "function"}:
+        statement = next((n for n in _walk(node) if n.type in {"module_statement", "program_statement", "subroutine_statement", "function_statement"}), None)
+        name = statement.child_by_field_name("name") if statement is not None else None
+        if statement is not None and name is None:
+            name = next((n for n in _walk(statement) if n.type == "name"), None)
     return name.text.decode("utf8", "replace") if name is not None else None
 
 
@@ -148,8 +212,7 @@ def _walk(node):
 
 
 def _tree_chunks(path: str, text: str) -> list[tuple[str | None, str, int, int, str]]:
-    suffix = Path(path).suffix.lower()
-    language = {".go": "go", ".js": "javascript", ".jsx": "javascript", ".tsx": "tsx"}.get(suffix, "typescript")
+    language = _language(path)
     lines = text.splitlines(keepends=True)
     try:
         root = _parser(language).parse(text.encode("utf8")).root_node
@@ -162,37 +225,54 @@ def _tree_chunks(path: str, text: str) -> list[tuple[str | None, str, int, int, 
         chunks.append((symbol, kind, start, end, "".join(lines[start - 1:end])))
 
     chunks: list[tuple[str | None, str, int, int, str]] = []
-    decls = _GO_DECLS if language == "go" else _TS_DECLS
-    for top in root.named_children:
-        node = top
+    decls = _GO_DECLS if language == "go" else _TS_DECLS if language in {"javascript", "typescript", "tsx"} else _DECLS.get(language, {})
+
+    def visit(node, owner: str | None = None) -> None:
         if node.type == "export_statement":
             inner = node.child_by_field_name("declaration") or next(
                 (c for c in node.named_children if c.type in decls), None
             )
-            if inner is None:
-                continue
-            node = inner
+            if inner is not None:
+                visit(inner, owner)
+            return
         kind = decls.get(node.type)
-        if kind is None or node.end_point[0] == node.start_point[0]:
-            continue
+        if kind is None:
+            for child in node.named_children:
+                visit(child, owner)
+            return
         name = _node_name(node)
         if language == "go" and kind == "method":
             receiver = _go_receiver(node)
             name = f"{receiver}.{name}" if receiver and name else name
-        body = node.child_by_field_name("body")
-        methods = [c for c in body.named_children if c.type in _TS_METHODS] if kind == "class" and body else []
-        multi_line = [m for m in methods if m.end_point[0] > m.start_point[0]]
-        if multi_line:
-            first = multi_line[0]
-            header_end = first.start_point[0]
-            start = top.start_point[0] + 1
-            if header_end >= start:
-                chunks.append((name, "class", start, header_end, "".join(lines[start - 1:header_end])))
-            for method in multi_line:
-                method_name = _node_name(method)
-                emit(method, f"{name}.{method_name}" if name and method_name else method_name, "method")
-        else:
-            emit(node, name, kind, start_node=top)
+        elif kind in {"function", "method"} and owner and name:
+            name = f"{owner}.{name}"
+            kind = "method"
+        elif kind == "impl" and name:
+            owner = name
+        if kind == "class" and language in {"javascript", "typescript", "tsx"}:
+            body = node.child_by_field_name("body")
+            methods = [c for c in body.named_children if c.type in _TS_METHODS] if body else []
+            multi_line = [m for m in methods if m.end_point[0] > m.start_point[0]]
+            if methods and multi_line:
+                start = node.start_point[0] + 1
+                header_end = multi_line[0].start_point[0]
+                if header_end >= start:
+                    chunks.append((name, "class", start, header_end, "".join(lines[start - 1:header_end])))
+            elif methods:
+                emit(node, name, kind)
+            if methods:
+                for method in methods:
+                    method_name = _node_name(method)
+                    emit(method, f"{name}.{method_name}" if name and method_name else method_name, "method")
+                return
+        emit(node, name, kind)
+        nested_owner = name if kind in {"class", "struct", "interface", "trait", "enum", "impl", "object", "module"} else owner
+        if kind not in {"function", "method", "macro", "type", "table", "view", "procedure"}:
+            for child in node.named_children:
+                visit(child, nested_owner)
+
+    for top in root.named_children:
+        visit(top)
     if not chunks:
         chunks.append((None, "file", 1, max(len(lines), 1), text))
     return chunks
@@ -332,7 +412,9 @@ class VersionedIndex:
         existing = self.conn.execute("SELECT base_commit FROM versions WHERE commit_id=?", (commit,)).fetchone()
         if existing:
             count = self.conn.execute("SELECT COUNT(*) FROM occurrences WHERE commit_id=?", (commit,)).fetchone()[0]
-            return IndexStats(commit, existing[0], 0, count, count)
+            parsed_files = self._backfill_new_language_files(commit)
+            total = self.conn.execute("SELECT COUNT(*) FROM occurrences WHERE commit_id=?", (commit,)).fetchone()[0]
+            return IndexStats(commit, existing[0], parsed_files, total - count, total)
 
         base: str | None = None
         if base_ref:
@@ -411,6 +493,43 @@ class VersionedIndex:
 
         total = self.conn.execute("SELECT COUNT(*) FROM occurrences WHERE commit_id=?", (commit,)).fetchone()[0]
         return IndexStats(commit, base, parsed_files, reused, total)
+
+    def _backfill_new_language_files(self, commit: str) -> int:
+        """Add languages introduced after the original index format to an existing commit."""
+        if not _NEW_LANGUAGE_SUFFIXES:
+            return 0
+        feature = "languages:" + _digest("\0".join(sorted(SUPPORTED_SUFFIXES)))[:16]
+        if self._has(commit, feature):
+            return 0
+        paths = self._git("ls-tree", "-r", "--name-only", commit).decode("utf-8", "replace").splitlines()
+        eligible = {path for path in paths if Path(path).suffix.lower() in _NEW_LANGUAGE_SUFFIXES}
+        indexed = {row[0] for row in self.conn.execute(
+            "SELECT DISTINCT path FROM occurrences WHERE commit_id=?", (commit,)
+        ).fetchall()}
+        missing = sorted(eligible - indexed)
+        parsed_files = 0
+        with self.conn:
+            for path in missing:
+                raw = self._git("show", f"{commit}:{path}")
+                if len(raw) > MAX_FILE_BYTES or b"\0" in raw:
+                    continue
+                text = raw.decode("utf-8", "replace")
+                language = _language(path)
+                spans = _chunks(path, text)
+                self._insert_refs(commit, path, text, spans)
+                for symbol, kind, start, end, part in spans:
+                    content_hash = _digest(language + "\0" + part)
+                    occurrence_id = _digest("\0".join((commit, path, symbol or "", str(start), content_hash)))
+                    self.conn.execute("INSERT OR IGNORE INTO blobs VALUES (?, ?, ?)",
+                                      (content_hash, part, language))
+                    self.conn.execute("INSERT OR IGNORE INTO occurrences VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                      (occurrence_id, commit, path, symbol, kind, start, end, content_hash))
+                parsed_files += 1
+            self.conn.execute("INSERT OR IGNORE INTO derived VALUES (?, ?)", (commit, feature))
+        if not parsed_files:
+            return 0
+        self._update_lineage(commit)
+        return parsed_files
 
     def _is_ancestor(self, ancestor: str, commit: str) -> bool:
         result = subprocess.run(["git", "-C", str(self.repo), "merge-base", "--is-ancestor", ancestor, commit],
