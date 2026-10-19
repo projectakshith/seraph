@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import posixpath
+import re
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -20,6 +21,17 @@ from seraph.types import EdgeKind
 Span = tuple[str | None, str, int, int, str]  # (symbol, kind, start, end, text) from `index._chunks`
 
 _TS_SUFFIXES = (".ts", ".tsx", ".js", ".jsx")
+_LANGUAGE_SUFFIXES = {
+    ".py": "python", ".go": "go", ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+    ".ts": "typescript", ".tsx": "tsx", ".mts": "typescript", ".cts": "typescript", ".c": "c", ".h": "c",
+    ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp", ".hh": "cpp", ".hpp": "cpp", ".hxx": "cpp", ".ipp": "cpp", ".inl": "cpp",
+    ".java": "java", ".cs": "c_sharp", ".rs": "rust", ".php": "php",
+    ".rb": "ruby", ".rake": "ruby", ".gemspec": "ruby", ".swift": "swift",
+    ".kt": "kotlin", ".kts": "kotlin", ".sh": "bash", ".bash": "bash",
+    ".dart": "dart", ".lua": "lua", ".sql": "sql", ".f": "fortran", ".for": "fortran",
+    ".f90": "fortran", ".f95": "fortran", ".f03": "fortran", ".f08": "fortran",
+    ".scala": "scala", ".sc": "scala", ".sbt": "scala",
+}
 
 
 @dataclass(frozen=True)
@@ -44,8 +56,7 @@ def symbol_id(path: str, symbol: str | None) -> str:
 
 def _language(path: str) -> str | None:
     suffix = posixpath.splitext(path)[1].lower()
-    return {".py": "python", ".go": "go", ".js": "javascript", ".jsx": "javascript",
-            ".ts": "typescript", ".tsx": "tsx"}.get(suffix)
+    return _LANGUAGE_SUFFIXES.get(suffix)
 
 
 def _enclosing(spans: Sequence[Span], n_lines: int):
@@ -154,6 +165,14 @@ def _tree_refs(path: str, text: str, at, language: str) -> list[Ref]:
     root = _parser(language).parse(text.encode("utf8")).root_node
     directory = posixpath.dirname(path)
     refs: list[Ref] = []
+    generic_imports = {
+        "preproc_include", "import_declaration", "import_header", "using_directive",
+        "use_declaration", "namespace_import", "include_directive",
+    }
+    generic_calls = {
+        "call_expression", "function_call_expression", "method_invocation", "invocation_expression",
+        "function_expression_invocation", "call", "function_call", "command", "subroutine_call",
+    }
     for node in _walk(root):
         line = node.start_point[0] + 1
         if language == "go":
@@ -168,6 +187,66 @@ def _tree_refs(path: str, text: str, at, language: str) -> list[Ref]:
                 if target:
                     refs.append(Ref(at(line), EdgeKind.CALLS, target))
             continue
+        if language not in {"javascript", "typescript", "tsx"}:
+            if node.type in generic_imports:
+                raw = _text(node).strip()
+                if node.type == "preproc_include":
+                    match = re.search(r"[<\"]([^>\"]+)[>\"]", raw)
+                    module = match.group(1) if match else ""
+                else:
+                    raw = re.sub(r"^(?:import|use|using)\s+", "", raw)
+                    raw = raw.rstrip(";{}").strip().strip("\"'`")
+                    alias = None
+                    if " as " in raw:
+                        raw, alias = raw.rsplit(" as ", 1)
+                    module = raw.rstrip(".*")
+                    if module.startswith("package:"):
+                        module = module[len("package:"):]
+                    if module.startswith("crate::"):
+                        module = module[len("crate::"):]
+                    if module.startswith("."):
+                        module = posixpath.normpath(posixpath.join(directory, module))
+                    imported_name = None
+                    if language == "rust" and "::" in module:
+                        module, imported_name = module.rsplit("::", 1)
+                    leaf = (imported_name or module.replace("\\", "/").replace("::", "/")
+                            .rsplit("/", 1)[-1].rsplit(".", 1)[-1])
+                    local = alias or leaf
+                    if local and module:
+                        target = f"{module}:{imported_name}" if imported_name else module
+                        refs.append(Ref(None, EdgeKind.IMPORTS, target, local))
+                if node.type == "preproc_include" and module:
+                    refs.append(Ref(None, EdgeKind.IMPORTS, module, posixpath.basename(module)))
+                continue
+            if node.type in generic_calls:
+                obj = node.child_by_field_name("object")
+                member = node.child_by_field_name("name") or node.child_by_field_name("method")
+                fn = (None if obj is not None and member is not None else
+                      next((node.child_by_field_name(field) for field in
+                            ("function", "name", "method", "target", "called_expression")
+                            if node.child_by_field_name(field) is not None), None))
+                if fn is None:
+                    fn = next((child for child in node.named_children
+                               if child.type not in {"arguments", "argument_list", "type_arguments"}), None)
+                if fn is not None or (obj is not None and member is not None):
+                    target = f"{_text(obj)}.{_text(member)}" if obj is not None and member is not None else _text(fn).strip()
+                    target = target.split("(", 1)[0].strip()
+                    if target and target not in {"this", "self"}:
+                        refs.append(Ref(at(line), EdgeKind.CALLS, target))
+                continue
+            if language == "sql" and node.type == "relation":
+                reference = next((child for child in node.named_children if child.type == "object_reference"), None)
+                name = reference.child_by_field_name("name") if reference is not None else None
+                if name is not None:
+                    refs.append(Ref(at(line), EdgeKind.REFERENCES, _text(name)))
+                continue
+            if language == "dart" and node.type == "selector" and node.parent is not None:
+                is_call = any(child.type == "argument_part" for child in node.named_children)
+                siblings = node.parent.named_children
+                position = next((i for i, child in enumerate(siblings) if child.id == node.id), -1)
+                if is_call and position > 0:
+                    refs.append(Ref(at(line), EdgeKind.CALLS, _text(siblings[position - 1])))
+                continue
         if node.type == "import_statement":
             source = node.child_by_field_name("source")
             if source is None:
@@ -276,6 +355,22 @@ class _Resolver:
                 if files:
                     return sorted(files)
             return []
+        if language in {"java", "c_sharp", "rust", "php", "c", "cpp", "kotlin", "scala", "ruby", "dart", "lua"}:
+            normalized = module.replace("\\", "/").replace("::", "/")
+            if language in {"java", "c_sharp", "kotlin", "scala"}:
+                normalized = normalized.replace(".", "/")
+            extensions = {
+                "java": (".java",), "c_sharp": (".cs",), "rust": (".rs",),
+                "php": (".php",), "c": (".h", ".c"), "cpp": (".hpp", ".hh", ".hxx", ".h", ".cpp", ".cc", ".cxx"),
+                "kotlin": (".kt", ".kts"), "scala": (".scala", ".sc"),
+                "ruby": (".rb", ".rake"), "dart": (".dart",), "lua": (".lua",),
+            }[language]
+            candidates = ([normalized] if any(normalized.endswith(ext) for ext in extensions)
+                          else [normalized + suffix for suffix in extensions])
+            matches = [path for path in self.paths for candidate in candidates
+                       if path == candidate or path.endswith("/" + candidate)]
+            if matches:
+                return sorted(set(matches))
         candidates = [module + s for s in _TS_SUFFIXES] + [f"{module}/index{s}" for s in _TS_SUFFIXES]
         return [c for c in candidates if c in self.paths]
 
@@ -302,6 +397,11 @@ class _Resolver:
     def lookup(self, files: Iterable[str], name: str) -> list[str]:
         return [self.local[f][name] for f in files if name in self.local.get(f, {})]
 
+    def lookup_member(self, files: Iterable[str], name: str) -> list[str]:
+        matches = [symbol_id(path, symbol) for path in files for symbol in self.local.get(path, {})
+                   if symbol.rsplit(".", 1)[-1] == name]
+        return sorted(set(matches))
+
     def resolve(self, path: str, ref: Ref) -> list[str]:
         target, local = ref.target, self.local.get(path, {})
         if target.startswith(("self.", "this.")):
@@ -317,7 +417,9 @@ class _Resolver:
             if binding:
                 files, name = binding
                 if name is None:
-                    return self.lookup(files, parts[i])
+                    suffix = ".".join(parts[i:])
+                    return (self.lookup(files, suffix) or self.lookup(files, parts[i])
+                            or self.lookup_member(files, parts[i]))
                 # `Class.method()` on an imported class; Python methods live in the class chunk.
                 return self.lookup(files, f"{name}.{parts[i]}") or self.lookup(files, name)
         head = parts[0]
@@ -334,6 +436,15 @@ class _Resolver:
             for files in self.stars.get(path, []):
                 hits = self.lookup(files, head)
                 if hits:
+                    return hits
+            if _language(path) in {"c", "cpp"} and ref.kind == EdgeKind.CALLS:
+                included = sorted({file for files, _ in bound.values() for file in files})
+                hits = self.lookup(included, target) or self.lookup(included, head)
+                if len(hits) == 1:
+                    return hits
+            if ref.kind == EdgeKind.CALLS:
+                hits = self._unique_method(head, ref.kind)
+                if len(hits) == 1:
                     return hits
             return []
         qualified = local.get(f"{head}.{parts[1]}") or local.get(head)
