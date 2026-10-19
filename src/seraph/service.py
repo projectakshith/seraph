@@ -5,6 +5,7 @@ from __future__ import annotations
 import difflib
 import hashlib
 import os
+import re
 import time
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict
@@ -236,6 +237,57 @@ def compare_versions(
     }
 
 
+_IMPLEMENTATION_CUES = re.compile(
+    r"\b(implement(?:ation|ed|s|ing)?|actual\s+(?:code|implementation)|source\s+code|"
+    r"definition|handler|entry\s+point)\b",
+    re.I,
+)
+_TEST_CUES = re.compile(r"\b(tests?|testing|coverage|fixtures?|assertions?)\b", re.I)
+_TEST_PATH = re.compile(
+    r"(^|/)(tests?|specs?)(/|$)|(^|/)(test_|.*_test\.|.*\.test\.|.*\.spec\.)",
+    re.I,
+)
+
+
+def _search_intent(query: str) -> str | None:
+    """Return an explicit test or implementation intent; leave broad behavior questions alone."""
+    wants_tests = bool(_TEST_CUES.search(query))
+    wants_implementation = bool(_IMPLEMENTATION_CUES.search(query))
+    if wants_tests == wants_implementation:
+        return None
+    return "tests" if wants_tests else "implementation"
+
+
+def _is_test_result(result) -> bool:
+    path = result.file
+    symbol = result.symbol or ""
+    return bool(_TEST_PATH.search(path) or re.match(r"^(test|spec)[A-Z_]", symbol, re.I))
+
+
+def _apply_intent_ranking(query: str, results: list) -> str | None:
+    intent = _search_intent(query)
+    if intent:
+        results.sort(
+            key=lambda result: (
+                _is_test_result(result) != (intent == "tests"),
+                -result.score,
+            )
+        )
+    return intent
+
+
+def _retrieval_mode(cfg: SeraphConfig) -> str:
+    retrieval = cfg.retrieval
+    views = []
+    if retrieval.use_bm25:
+        views.append("BM25")
+    if retrieval.use_dense:
+        views.append(f"dense:{retrieval.dense_model}")
+    if retrieval.use_structural:
+        views.append("structural")
+    return "+".join(views) if views else "no retrieval views enabled"
+
+
 def search_index(
     index: vindex.VersionedIndex,
     query: str,
@@ -259,9 +311,14 @@ def search_index(
         "index": {**asdict(stats), "ms": round((t1 - t0) * 1000, 1)},
         "results": [],
     }
+    out["retrieval_mode"] = _retrieval_mode(cfg)
+    out["ranking_intent"] = _search_intent(query)
     if pipe is None or not query.strip() or limit < 1:
         return out
-    resp = pipe.search(query, top_k=limit * 4 if include_history else limit, include_history=include_history)
+    intent = out["ranking_intent"]
+    candidate_limit = limit * 4 if include_history or intent else limit
+    resp = pipe.search(query, top_k=candidate_limit, include_history=include_history)
+    _apply_intent_ranking(query, resp.results)
     results: list[dict[str, Any]] = []
     by_content: dict[str, dict[str, Any]] = {}
     for r in resp.results:

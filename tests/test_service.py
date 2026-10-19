@@ -1,11 +1,68 @@
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from seraph.config import SeraphConfig
+from seraph.context_tools import prepare_change_context
 from seraph.index import VersionedIndex
-from seraph.service import IndexChunkStore, search_index
+from seraph.service import IndexChunkStore, _apply_intent_ranking, search_index
+
+
+def test_explicit_search_intent_ranks_tests_and_implementations():
+    test_hit = SimpleNamespace(file="tests/test_storage.py", symbol="test_storage", score=10.0)
+    impl_hit = SimpleNamespace(file="src/storage.cpp", symbol="Storage::open", score=1.0)
+    results = [test_hit, impl_hit]
+
+    assert _apply_intent_ranking("find the implementation", results) == "implementation"
+    assert results == [impl_hit, test_hit]
+    assert _apply_intent_ranking("find the tests", results) == "tests"
+    assert results == [test_hit, impl_hit]
+    assert _apply_intent_ranking("how does storage behave", results) is None
+
+
+def test_change_context_keeps_search_evidence_when_compacting(tmp_path):
+    git(tmp_path, "init", "-q")
+    git(tmp_path, "config", "user.email", "test@example.com")
+    git(tmp_path, "config", "user.name", "Seraph Test")
+    source = tmp_path / "src"
+    source.mkdir()
+    (source / "storage.py").write_text(
+        'def persist_session_state(session):\n'
+        '    \"\"\"Persist session state to storage.\"\"\"\n'
+        '    return write_record(session)\n'
+    )
+    for i in range(30):
+        (source / f"module_{i}.py").write_text(
+            f"def helper_{i}(value):\n    return normalize_value(value)\n"
+        )
+    git(tmp_path, "add", ".")
+    git(tmp_path, "commit", "-qm", "add session storage")
+
+    with VersionedIndex(tmp_path, tmp_path / "idx.sqlite") as index:
+        pack = prepare_change_context(
+            index, "find the implementation that persists session state to storage", scope="head", max_chars=1000
+        )
+
+    assert pack["search_evidence"]
+    assert pack["retrieval_mode"] == "BM25"
+    assert pack["char_count"] <= 1000
+
+
+def test_explicit_search_intent_prioritizes_matching_results(repo):
+    path, _, _ = repo
+    (path / "tests").mkdir()
+    (path / "tests" / "test_config.py").write_text("def test_parse_config():\n    pass\n")
+    git(path, "add", ".")
+    git(path, "commit", "-qm", "add config test")
+    with VersionedIndex(path, path / "idx.sqlite") as index:
+        impl = search_index(index, "find the implementation of parse config", limit=2, cfg=SeraphConfig())
+        tests = search_index(index, "find tests for parse config", limit=2, cfg=SeraphConfig())
+    assert impl["ranking_intent"] == "implementation"
+    assert impl["results"][0]["path"] == "config.py"
+    assert tests["ranking_intent"] == "tests"
+    assert tests["results"][0]["path"] == "tests/test_config.py"
 
 
 def git(repo: Path, *args: str) -> str:
