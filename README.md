@@ -2,9 +2,23 @@
 
 **Code intelligence for coding agents:** search a repository by meaning, symbols, dependencies, and Git history.
 
+## Get started
+
+Install Seraph with one command:
+
+```bash
+python -m pip install seraph-mcp
+```
+
+Then tell your coding agent:
+
+> Read [AGENT_SETUP.md](AGENT_SETUP.md) and set up Seraph for this repository.
+
+The agent will register Seraph with its MCP support and check that it connects. Seraph starts in **Lite** mode, so it is ready without downloading a model.
+
 ## Search tiers
 
-Choose the balance between setup cost and semantic search quality. Lite is the default; no model is downloaded unless you choose another tier.
+Switch tiers anytime. Fast and Quality add semantic search with local models.
 
 | Tier | Search | Model download |
 |---|---|---:|
@@ -12,11 +26,11 @@ Choose the balance between setup cost and semantic search quality. Lite is the d
 | **Fast** | BM25 + `potion-code-16M` embeddings | 62 MB |
 | **Quality** | BM25 + BGE-Code-v1 embeddings | About 6 GB |
 
+Use `seraph setup` to choose interactively, or install a tier directly:
+
 ```bash
-python -m pip install seraph-mcp
-seraph status                  # see current tier
-seraph setup                   # choose a tier
 seraph setup --tier fast --install
+seraph setup --tier quality --install
 ```
 
 ## Use Seraph with an agent
