@@ -1,10 +1,18 @@
 [project]
-name = "seraph"
-version = "0.1.0"
+name = "seraph-mcp"
+version = "0.2.0"
 description = "Query-adaptive, evolution-aware code retrieval"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
+keywords = ["mcp", "code-search", "retrieval", "embeddings", "git", "coding-agents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+]
 dependencies = [
     "numpy>=1.26",
     "pydantic>=2.7",
@@ -33,20 +41,36 @@ dependencies = [
     "tree-sitter-fortran>=0.6",
     "tree-sitter-scala>=0.26",
     "typer>=0.12",
+    "mcp>=1.2,<2",
 ]
 
 [project.optional-dependencies]
-cpu = [
+fast = ["model2vec>=0.9,<0.10", "huggingface-hub>=0.34"]
+quality = [
     "torch>=2.4",
     "transformers>=4.51,<5",
-    "sentence-transformers>=3.4",
+    "sentence-transformers>=3.4,<6",
+    "einops>=0.8",
+]
+cpu = [
+    "torch>=2.4",
+    # BGE-Code-v1 ships custom Transformers code that is not compatible with v5 yet.
+    "transformers>=4.51,<5",
+    "sentence-transformers>=3.4,<6",
     "faiss-cpu>=1.8",
     "einops>=0.8",
 ]
 gpu = [
     "torch>=2.4",
     "transformers>=4.51,<5",
-    "sentence-transformers>=3.4",
+    "sentence-transformers>=3.4,<6",
+    "faiss-cpu>=1.8",
+    "einops>=0.8",
+]
+gemma2 = [
+    "torch>=2.4",
+    "transformers>=5.19,<6",
+    "sentence-transformers>=6.1,<7",
     "faiss-cpu>=1.8",
     "einops>=0.8",
 ]
@@ -61,10 +85,14 @@ api = [
     "google-genai>=1.20",
     "openai>=1.40",
 ]
-mcp = ["mcp>=1.2,<2"]
+
+[project.urls]
+Homepage = "https://github.com/projectakshith/seraph"
+Repository = "https://github.com/projectakshith/seraph"
 
 [project.scripts]
 seraph = "seraph.cli:main"
+seraph-mcp = "seraph.server:main"
 seraph-eval = "seraph.evaluation.cli:app"
 
 [dependency-groups]
@@ -74,12 +102,22 @@ dev = ["pytest>=8.2", "ruff>=0.6"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.sdist]
+include = ["src/seraph", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/seraph"]
 
 [tool.uv]
 python-preference = "managed"
-conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+conflicts = [
+    [{ extra = "quality" }, { extra = "cpu" }],
+    [{ extra = "quality" }, { extra = "gpu" }],
+    [{ extra = "quality" }, { extra = "gemma2" }],
+    [{ extra = "cpu" }, { extra = "gpu" }],
+    [{ extra = "cpu" }, { extra = "gemma2" }],
+    [{ extra = "gpu" }, { extra = "gemma2" }],
+]
 
 [tool.uv.sources]
 torch = [

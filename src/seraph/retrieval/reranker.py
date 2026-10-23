@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from seraph.config import RERANKERS, ModelSpec, resolve_device
+from seraph.retrieval.semantic import _dtype_kwargs
 from seraph.types import ScoredChunk
 
 RERANK_INSTRUCTION = "Given a programming problem description, judge whether the code solves it"
@@ -103,7 +104,7 @@ class CrossEncoderReranker(_BaseReranker):
             max_length=spec.max_len,
             device=device,
             trust_remote_code=spec.trust_remote_code,
-            model_kwargs={"dtype": torch.float16} if device == "cuda" else {},
+            model_kwargs=_dtype_kwargs(torch.float16) if device == "cuda" else {},
         )
         self.revision = getattr(self.model.model.config, "_commit_hash", None) or "unknown"
 
@@ -135,7 +136,7 @@ class CausalLMReranker(_BaseReranker):
         self.model = AutoModelForCausalLM.from_pretrained(
             spec.hf_id,
             revision=spec.revision,
-            dtype=torch.float16 if self.device == "cuda" else torch.float32,
+            **_dtype_kwargs(torch.float16 if self.device == "cuda" else torch.float32),
         ).to(self.device).eval()
         self.revision = getattr(self.model.config, "_commit_hash", None) or "unknown"
         self.yes_id = self.tok.convert_tokens_to_ids("yes")

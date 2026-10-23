@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import threading
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
@@ -35,6 +36,14 @@ def _torch_dtype(name: str):
     return {"float16": torch.float16, "bfloat16": torch.bfloat16, "float32": torch.float32}[name]
 
 
+def _dtype_kwargs(dtype):
+    """Transformers 4 uses ``torch_dtype``; Transformers 5 renamed it to ``dtype``."""
+    import transformers
+
+    major = int(transformers.__version__.split(".", 1)[0])
+    return {"dtype" if major >= 5 else "torch_dtype": dtype}
+
+
 class STEmbedder:
     """sentence-transformers backend."""
 
@@ -44,13 +53,14 @@ class STEmbedder:
         self.spec = spec
         self.name = spec.name
         device = resolve_device(device)
-        kwargs = {"dtype": _torch_dtype(spec.dtype)} if device in ("cuda", "mps") else {}
+        kwargs = _dtype_kwargs(_torch_dtype(spec.dtype)) if device in ("cuda", "mps") else {}
         self.model = SentenceTransformer(
             spec.hf_id,
             revision=spec.revision,
             trust_remote_code=spec.trust_remote_code,
             device=device,
             model_kwargs=kwargs,
+            config_kwargs=spec.options.get("config_kwargs"),
         )
         self.model.max_seq_length = spec.max_len
         get_dim = getattr(self.model, "get_embedding_dimension", None) or self.model.get_sentence_embedding_dimension
@@ -91,7 +101,7 @@ class HFEmbedder:
             spec.hf_id,
             revision=spec.revision,
             trust_remote_code=spec.trust_remote_code,
-            dtype=dtype,
+            **_dtype_kwargs(dtype),
         ).to(self.device).eval()
         self.revision = _commit_hash(self.model)
         self.dim = int(self._forward(["x"]).shape[1])
@@ -131,16 +141,50 @@ class HFEmbedder:
         return self._encode(texts, self.spec.doc_prefix)
 
 
+class StaticEmbedder:
+    """model2vec static embeddings: a token lookup table, no transformer forward pass."""
+
+    def __init__(self, spec: ModelSpec, device: str = "auto") -> None:
+        from model2vec import StaticModel
+
+        self.spec = spec
+        self.name = spec.name
+        self.model = StaticModel.from_pretrained(spec.hf_id, force_download=False)
+        self.dim = int(self.model.embedding.shape[1])
+        self.revision = _hf_cached_revision(spec) or "unknown"
+
+    def _encode(self, texts: Sequence[str], prefix: str) -> np.ndarray:
+        vecs = self.model.encode([prefix + t for t in texts], max_length=self.spec.max_len)
+        return normalize(vecs)
+
+    def encode_queries(self, texts: Sequence[str]) -> np.ndarray:
+        return self._encode(texts, self.spec.query_prefix)
+
+    def encode_documents(self, texts: Sequence[str]) -> np.ndarray:
+        return self._encode(texts, self.spec.doc_prefix)
+
+
 def _commit_hash(model) -> str:
     return getattr(getattr(model, "config", None), "_commit_hash", None) or "unknown"
 
 
+_LOADED: dict[tuple[str, str, str, str], Embedder] = {}
+_LOAD_LOCK = threading.Lock()
+
+
 def _load_local(spec: ModelSpec, device: str) -> Embedder:
-    if spec.trust_remote_code:
-        _transformers_compat()
-    if spec.backend == "st":
-        return STEmbedder(spec, device)
-    return HFEmbedder(spec, device)
+    key = (spec.backend, spec.hf_id, spec.revision, resolve_device(device))
+    with _LOAD_LOCK:
+        if key not in _LOADED:
+            if spec.trust_remote_code:
+                _transformers_compat()
+            if spec.backend == "static":
+                _LOADED[key] = StaticEmbedder(spec, device)
+            elif spec.backend == "st":
+                _LOADED[key] = STEmbedder(spec, device)
+            else:
+                _LOADED[key] = HFEmbedder(spec, device)
+        return _LOADED[key]
 
 
 def _hf_cached_revision(spec: ModelSpec) -> str | None:

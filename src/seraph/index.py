@@ -13,6 +13,7 @@ import math
 import re
 import sqlite3
 import subprocess
+import threading
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -37,6 +38,14 @@ _LEGACY_SUPPORTED_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go"}
 _NEW_LANGUAGE_SUFFIXES = SUPPORTED_SUFFIXES - _LEGACY_SUPPORTED_SUFFIXES
 MAX_FILE_BYTES = 1_000_000
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9]*|\d+")
+_INDEX_LOCKS: dict[str, threading.RLock] = {}
+_INDEX_LOCKS_GUARD = threading.Lock()
+
+
+def _index_lock_for(db_path: Path) -> threading.RLock:
+    key = str(db_path.resolve())
+    with _INDEX_LOCKS_GUARD:
+        return _INDEX_LOCKS.setdefault(key, threading.RLock())
 
 
 @dataclass(frozen=True)
@@ -284,6 +293,21 @@ def _chunks(path: str, text: str) -> list[tuple[str | None, str, int, int, str]]
     return _tree_chunks(path, text)
 
 
+def _unique_occurrence_id(identity: str, seen: dict[str, int]) -> str:
+    duplicate = seen.get(identity, 0)
+    seen[identity] = duplicate + 1
+    return _digest(identity if duplicate == 0 else f"{identity}\0duplicate:{duplicate}")
+
+
+def _identified_chunks(commit: str, path: str, spans, language: str):
+    """Yield unique stable IDs for parsed spans, including same-line/minified declarations."""
+    seen: dict[str, int] = {}
+    for symbol, kind, start, end, part in spans:
+        content_hash = _digest(language + "\0" + part)
+        identity = "\0".join((commit, path, symbol or "", str(start), content_hash))
+        yield _unique_occurrence_id(identity, seen), content_hash, symbol, kind, start, end, part
+
+
 class VersionedIndex:
     def __init__(self, repo: str | Path, db_path: str | Path | None = None):
         self.repo = Path(repo).resolve()
@@ -408,6 +432,12 @@ class VersionedIndex:
         return [row[0] for row in rows]
 
     def index_commit(self, ref: str = "HEAD", base_ref: str | None = None) -> IndexStats:
+        # Several MCP requests can arrive together and all lazily index the same HEAD.
+        # Serialize that write path per database; subsequent lookups remain concurrent.
+        with _index_lock_for(self.db_path):
+            return self._index_commit_locked(ref, base_ref)
+
+    def _index_commit_locked(self, ref: str = "HEAD", base_ref: str | None = None) -> IndexStats:
         commit = self.resolve(ref)
         existing = self.conn.execute("SELECT base_commit FROM versions WHERE commit_id=?", (commit,)).fetchone()
         if existing:
@@ -453,13 +483,15 @@ class VersionedIndex:
                                           (commit, *tuple(row)[1:]))
                 rows = self.conn.execute(
                     "SELECT path, symbol, kind, start_line, end_line, content_hash "
-                    "FROM occurrences WHERE commit_id=?", (base,)
+                    "FROM occurrences WHERE commit_id=? ORDER BY path, start_line, rowid", (base,)
                 ).fetchall()
+                reused_ids: dict[str, int] = {}
                 for row in rows:
                     if row["path"] not in eligible or row["path"] in changed:
                         continue
-                    occurrence_id = _digest("\0".join((commit, row["path"], row["symbol"] or "",
-                                                       str(row["start_line"]), row["content_hash"])))
+                    identity = "\0".join((commit, row["path"], row["symbol"] or "",
+                                           str(row["start_line"]), row["content_hash"]))
+                    occurrence_id = _unique_occurrence_id(identity, reused_ids)
                     self.conn.execute(
                         "INSERT INTO occurrences VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         (occurrence_id, commit, row["path"], row["symbol"], row["kind"],
@@ -476,10 +508,8 @@ class VersionedIndex:
                 parsed_files += 1
                 spans = _chunks(path, text)
                 self._insert_refs(commit, path, text, spans)
-                for symbol, kind, start, end, part in spans:
+                for occurrence_id, content_hash, symbol, kind, start, end, part in _identified_chunks(commit, path, spans, language):
                     # The same source text can mean different things in different languages.
-                    content_hash = _digest(language + "\0" + part)
-                    occurrence_id = _digest("\0".join((commit, path, symbol or "", str(start), content_hash)))
                     self.conn.execute(
                         "INSERT OR IGNORE INTO blobs VALUES (?, ?, ?)",
                         (content_hash, part, language),
@@ -517,9 +547,7 @@ class VersionedIndex:
                 language = _language(path)
                 spans = _chunks(path, text)
                 self._insert_refs(commit, path, text, spans)
-                for symbol, kind, start, end, part in spans:
-                    content_hash = _digest(language + "\0" + part)
-                    occurrence_id = _digest("\0".join((commit, path, symbol or "", str(start), content_hash)))
+                for occurrence_id, content_hash, symbol, kind, start, end, part in _identified_chunks(commit, path, spans, language):
                     self.conn.execute("INSERT OR IGNORE INTO blobs VALUES (?, ?, ?)",
                                       (content_hash, part, language))
                     self.conn.execute("INSERT OR IGNORE INTO occurrences VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

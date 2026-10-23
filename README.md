@@ -24,21 +24,41 @@ Team **floppydisk**, SRM Institute of Science and Technology · Samsung PRISM Ge
 
 ---
 
+## Install and get started
+
+Seraph requires Python 3.12 and Git. Install the published MCP package:
+
+```bash
+python -m pip install seraph-mcp
+seraph status     # see the active tier and setup needs
+seraph setup      # choose Lite, Fast or Quality
+```
+
+Lite is the default and works immediately with BM25 keyword search. Fast adds a local 62 MB embedding model; Quality uses BGE-Code-v1 and downloads about 6 GB. Nothing downloads until you choose a tier. See [Search tiers](#search-tiers) for details.
+
+Register a local stdio MCP server in your coding agent with command `seraph-mcp` and no arguments. On every Seraph tool call, pass `repo` as the absolute path to the local Git checkout you want searched. The server does not upload repository contents; its index is stored under `<repo>/.seraph/`.
+
+For `uvx`, use command `uvx` and arguments `seraph-mcp`; to install the Fast extra in that isolated environment, use `--from seraph-mcp[fast] seraph-mcp` as the arguments. Agent setup differs by host; see [AGENT_SETUP.md](AGENT_SETUP.md) for more guidance.
+
+---
+
 ## For judges
 
-Everything below runs locally with no API keys. Commands are run from the repository root.
+The core MCP search and submitted benchmark run locally without API keys. Optional Gemini-backed configurations require a Gemini API key. Commands below are run from the repository root.
 
 ### 1. Setup
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh          # only if uv is missing
-git clone https://github.com/wtfPrethiv/seraph && cd seraph
-uv sync --extra eval --extra cpu --extra mcp            # use --extra gpu instead of cpu on a CUDA machine
+git clone https://github.com/projectakshith/seraph && cd seraph
+uv sync --extra eval --extra cpu                        # use --extra gpu instead of cpu on a CUDA machine
 source .venv/bin/activate
 # or, without uv: python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 seraph smoke                                            # 7 checks on a temporary two-commit repo, under a second, no model download
 seraph-eval train-structural                            # trains the structural (γ) model on the train split, about a minute
 ```
+
+For the MCP package, the default install is keyword-only (BM25) and downloads no model. Semantic search is opt-in per user; see [Search tiers](#search-tiers).
 
 `seraph smoke` indexes a throwaway repository at two commits, searches both versions, searches all versions, compares them and prints PASS or FAIL with timings for each check.
 
@@ -229,7 +249,7 @@ npm install && npm run dev
 ```
 
 ```bash
-uv sync --extra mcp
+uvx seraph-mcp                  # or: pipx install seraph-mcp / pip install seraph-mcp
 ```
 
 In Morpheus, run `/seraph setup /path/to/seraph` once; it writes the server entry to `~/.morpheus/config.json` next to your other servers. Any other MCP client can use the same entry:
@@ -238,14 +258,39 @@ In Morpheus, run `/seraph setup /path/to/seraph` once; it writes the server entr
 {
   "mcpServers": {
     "seraph": {
-      "command": "/path/to/seraph/.venv/bin/python",
-      "args": ["-m", "seraph.server"]
+      "command": "uvx",
+      "args": ["seraph-mcp"]
     }
   }
 }
 ```
 
-The server searches the Git repository it is started in (`SERAPH_REPO` overrides that, `SERAPH_DB` the database path). Tools: `search_code`, `search_at_version`, `search_history`, `find_symbol`, `find_dependencies`, `compare_versions` and `index_repository`; a search indexes the requested version on first use and returns path, commit, line range, snippet, score and timings. Morpheus renders the results as ranked cards, and `/versus <question>` runs the same question through Seraph and grep side by side.
+For the fast tier use `"args": ["--from", "seraph-mcp[fast]", "seraph-mcp"]`; see [Search tiers](#search-tiers).
+
+The server searches the Git repository it is started in (`SERAPH_REPO` overrides that, `SERAPH_DB` the database path). Tools: `search_code`, `search_at_version`, `search_history`, `search_worktree`, `find_symbol`, `find_dependencies`, `compare_versions`, `change_impact`, `prepare_change_context`, `get_repo_map`, `get_working_tree_status`, `index_repository`, plus `retrieval_status` and `set_retrieval_tier` for choosing the search tier; a search indexes the requested version on first use and returns path, commit, line range, snippet, score and timings. Morpheus renders the results as ranked cards, and `/versus <question>` runs the same question through Seraph and grep side by side.
+
+---
+
+## Search tiers
+
+Semantic search is optional. Each user picks a tier; nothing is downloaded until they do.
+
+| Tier | What runs | Download | First search | Install |
+|---|---|---|---|---|
+| `lite` (default) | BM25 with the code-aware tokenizer | none | instant | `seraph-mcp` |
+| `fast` | BM25 + potion-code-16M static embeddings (CPU, no torch) | 62 MB | about a second | `seraph-mcp[fast]` |
+| `quality` | BM25 + BGE-Code-v1 (1.5B) | about 6 GB | tens of seconds while the repository is embedded | `seraph-mcp[quality]` |
+
+```bash
+seraph status                                  # active tier and what each one needs
+seraph setup                                   # interactive choice
+seraph setup --tier fast --install             # install packages, download the model, verify it, save the choice
+seraph setup --tier quality --install --json   # same, machine-readable for agents
+```
+
+The choice is saved in `~/.seraph/settings.json` (`SERAPH_HOME` moves it) and applies to every project. `SERAPH_TIER` overrides it for one process, and `SERAPH_CONFIG` (a YAML path) overrides both. Embeddings are cached under `~/.seraph/cache`. An agent can do the same through the `retrieval_status` and `set_retrieval_tier` MCP tools: until the user has chosen, search results carry a `notice` telling the agent to ask. If a chosen tier is missing packages or its model, search falls back to `lite` and says why in the `notice` field instead of failing.
+
+`quality` needs `transformers<5` because BGE-Code-v1 ships remote code that is not compatible with v5; keep it in its own environment if you also use the `gemma2` extra.
 
 ---
 

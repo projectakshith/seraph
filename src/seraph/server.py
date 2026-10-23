@@ -247,6 +247,36 @@ def get_repo_map(
     }
 
 
+@mcp.tool()
+def retrieval_status() -> dict:
+    """Show the active search tier (lite, fast, quality), what each needs, and whether the user has chosen. If they have not, ask them which tier they want before calling set_retrieval_tier."""
+    from . import provision
+
+    return provision.status()
+
+
+@mcp.tool()
+def set_retrieval_tier(tier: str, install: bool = False) -> dict:
+    """Switch search tier after the user agrees: 'lite' keyword only, 'fast' 62 MB static embeddings, 'quality' BGE-Code-v1 (about 6 GB). Takes effect on the next search with no restart. Set install=true to pip install missing packages. Large downloads are not run here; the result gives the terminal command to run instead."""
+    from . import provision, tiers
+
+    try:
+        spec = tiers.TIERS[tiers.check_name(tier.strip().lower())]
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    name = spec.name
+    heavy = spec.download_mb >= tiers.HEAVY_DOWNLOAD_MB
+    if heavy and (tiers.problems(name) or not tiers.model_cached(name)):
+        return {
+            "ok": False,
+            "applied": False,
+            "reason": f"{name} needs a {spec.download_mb} MB download and takes minutes, which is too long for a tool call.",
+            "run_in_terminal": tiers.setup_command(name),
+            "problems": tiers.problems(name),
+        }
+    return provision.provision(name, install=install)
+
+
 def main() -> None:
     mcp.run(transport="stdio")
 

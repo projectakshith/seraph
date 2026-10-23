@@ -9,9 +9,11 @@ import re
 import time
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
 from seraph import index as vindex
+from seraph import tiers
 from seraph.config import SeraphConfig, load_config
 from seraph.types import ChangeSet, Chunk
 
@@ -93,10 +95,52 @@ class IndexChunkStore:
         return len(self._chunks)
 
 
+def _project_root(config_path: Path) -> Path:
+    for parent in config_path.resolve().parents:
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
+            return parent
+    return config_path.resolve().parent
+
+
+def _anchor_paths(cfg: SeraphConfig, config_path: Path) -> SeraphConfig:
+    """Relative paths in a YAML config resolve against its project root, not the server's cwd."""
+    root = _project_root(config_path)
+
+    def anchored(value: str | None) -> str | None:
+        return str(root / value) if value and not Path(value).is_absolute() else value
+
+    cfg.cache_dir = anchored(cfg.cache_dir)
+    cfg.retrieval.structural_model_path = anchored(cfg.retrieval.structural_model_path)
+    cfg.retrieval.weight_model_path = anchored(cfg.retrieval.weight_model_path)
+    return cfg
+
+
 def service_config() -> SeraphConfig:
-    """`SERAPH_CONFIG` (YAML) if set; otherwise BM25 with the code-aware tokenizer, no API calls."""
+    """`SERAPH_CONFIG` (YAML) wins; otherwise the user's tier (`SERAPH_TIER` or `seraph setup`), else BM25."""
     path = os.environ.get("SERAPH_CONFIG")
-    return load_config(path) if path else SeraphConfig()
+    if path:
+        return _anchor_paths(load_config(path), Path(path))
+    return tiers.tier_config(tiers.effective_tier().effective)
+
+
+def tier_notice() -> dict[str, str]:
+    """Tells the agent when search is keyword-only and why, so it can ask the user."""
+    if os.environ.get("SERAPH_CONFIG"):
+        return {}
+    state = tiers.effective_tier()
+    notice: dict[str, str] = {"tier": state.effective}
+    if state.requested != state.effective:
+        notice["notice"] = (
+            f"Tier '{state.requested}' is selected but unavailable ({'; '.join(state.problems)}); "
+            f"using keyword search. Fix: {tiers.setup_command(state.requested)}"
+        )
+    elif state.source == "default":
+        notice["notice"] = (
+            "Keyword-only search (tier 'lite'). Embedding search is available: ask the user whether "
+            "they want 'fast' (62 MB, instant) or 'quality' (about 6 GB, slow first search), then "
+            "call set_retrieval_tier. Skip this if they only want keyword search."
+        )
+    return notice
 
 
 _PIPELINES: dict[tuple, tuple[Any, IndexChunkStore]] = {}
@@ -309,6 +353,7 @@ def search_index(
 
     t0 = time.perf_counter()
     stats = index.index_commit(ref)
+    explicit_cfg = cfg
     cfg = cfg or service_config()
     pipe, store = _pipeline(index, stats.commit, include_history, cfg)
     t1 = time.perf_counter()
@@ -320,6 +365,8 @@ def search_index(
         "results": [],
     }
     out["retrieval_mode"] = _retrieval_mode(cfg)
+    if explicit_cfg is None:
+        out.update(tier_notice())
     out["ranking_intent"] = _search_intent(query)
     if pipe is None or not query.strip() or limit < 1:
         return out

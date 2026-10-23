@@ -14,7 +14,7 @@ class ModelSpec(BaseModel):
     hf_id: str
     revision: str = "main"
     backend: Literal[
-        "st", "hf", "codet5p", "cross_encoder", "causal_reranker", "gemini_embed", "gemini_rerank"
+        "st", "hf", "codet5p", "static", "cross_encoder", "causal_reranker", "gemini_embed", "gemini_rerank"
     ] = "st"
     pooling: Literal["mean", "cls", "last"] = "mean"
     query_prefix: str = ""
@@ -44,6 +44,13 @@ EMBEDDERS: dict[str, ModelSpec] = {
             hf_id="gemini-embedding-001",
             backend="gemini_embed",
             options={"output_dim": 768, "query_task": "CODE_RETRIEVAL_QUERY", "doc_task": "RETRIEVAL_DOCUMENT", "rpm": 0.98, "batch": 100},
+        ),
+        ModelSpec(
+            name="potion-code-16m",
+            hf_id="minishlab/potion-code-16M",
+            backend="static",
+            max_len=512,
+            params_m=16,
         ),
         ModelSpec(name="codebert", hf_id="microsoft/codebert-base", backend="hf", params_m=125),
         ModelSpec(name="graphcodebert", hf_id="microsoft/graphcodebert-base", backend="hf", params_m=125),
@@ -121,6 +128,17 @@ EMBEDDERS: dict[str, ModelSpec] = {
             dtype="float32",
             batch_size=16,
             params_m=300,
+        ),
+        ModelSpec(
+            name="embeddinggemma-2",
+            hf_id="google/embeddinggemma-2",
+            query_prefix="task: code retrieval | query: ",
+            doc_prefix="title: none | text: ",
+            max_len=1024,
+            dtype="float32",
+            batch_size=1,
+            params_m=270,
+            options={"config_kwargs": {"vision_config": None, "audio_config": None}},
         ),
     ]
 }

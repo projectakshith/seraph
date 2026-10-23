@@ -96,6 +96,59 @@ def _render_compare(out: dict) -> str:
     return "\n".join(lines)
 
 
+def _render_status(info: dict) -> str:
+    active = info["active_tier"]
+    lines = [f"active tier: {active}  (chosen by: {info['chosen_by']})"]
+    lines += [f"  problem: {p}" for p in info["problems"]]
+    lines.append("")
+    for t in info["tiers"]:
+        mark = "*" if t["name"] == active else " "
+        state = "ready" if t["ready"] else "needs setup"
+        size = f"{t['download_mb']} MB" if t["download_mb"] else "no download"
+        lines.append(f"{mark} {t['name']:8} {state:12} {size:12} {t['summary']}")
+        lines += [f"      {p}" for p in t["problems"]]
+    lines += ["", "change it with: seraph setup --tier <lite|fast|quality> [--install]"]
+    return "\n".join(lines)
+
+
+def _pick_tier() -> str | None:
+    from . import provision, tiers
+
+    print(_render_status(provision.status()), "\n")
+    answer = input(f"Tier [{'/'.join(tiers.TIERS)}] (enter to keep current): ").strip().lower()
+    return answer or None
+
+
+def _run_setup(args) -> int:
+    import sys
+
+    from . import provision
+
+    if args.command == "status":
+        info = provision.status()
+        print(json.dumps(info, indent=2) if args.json else _render_status(info))
+        return 0
+    tier = args.tier
+    if tier is None:
+        if args.json or not sys.stdin.isatty():
+            info = provision.status()
+            print(json.dumps(info, indent=2) if args.json else _render_status(info))
+            return 0
+        tier = _pick_tier()
+        if tier is None:
+            return 0
+    result = provision.provision(tier, install=args.install, download=not args.no_download)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        for step in result["steps"]:
+            print(f"{'ok  ' if step['ok'] else 'FAIL'} {step['step']:12} {step['detail']}")
+        print(f"\ntier: {result['tier']}  {'ready' if result['ok'] else 'not ready'}")
+        if result["next"]:
+            print(result["next"])
+    return 0 if result["ok"] else 1
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="seraph")
     parser.add_argument("--repo", type=Path, default=Path.cwd(), help="Git repository to index/search")
@@ -130,11 +183,20 @@ def main() -> None:
     compare.add_argument("--json", action="store_true")
     commands.add_parser("versions", help="List indexed commit IDs")
     commands.add_parser("smoke", help="Self-check on a temporary two-commit repository (no model download)")
+    setup = commands.add_parser("setup", help="Choose a search tier (lite, fast, quality) and prepare its model")
+    setup.add_argument("--tier", choices=("lite", "fast", "quality"))
+    setup.add_argument("--install", action="store_true", help="pip install the tier's Python packages if missing")
+    setup.add_argument("--no-download", action="store_true", help="skip downloading and verifying the model")
+    setup.add_argument("--json", action="store_true")
+    status = commands.add_parser("status", help="Show the active search tier and what each tier needs")
+    status.add_argument("--json", action="store_true")
     args = parser.parse_args()
     if args.command == "smoke":
         from .smoke import run
 
         raise SystemExit(run())
+    if args.command in ("setup", "status"):
+        raise SystemExit(_run_setup(args))
     with VersionedIndex(args.repo, args.db) as store:
         if args.command == "index":
             print(json.dumps(asdict(store.index_commit(args.ref, args.base)), indent=2))
