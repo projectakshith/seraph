@@ -10,9 +10,9 @@ Install Seraph with one command:
 python -m pip install seraph-mcp
 ```
 
-Then tell your coding agent:
+Then tell your coding agent to:
 
-> Read [AGENT_SETUP.md](AGENT_SETUP.md) and set up Seraph for this repository.
+>install Seraph with pip install seraph-mcp and set it up for this repository.
 
 The agent will register Seraph with its MCP support and check that it connects. Seraph starts in **Lite** mode, so it is ready without downloading a model.
 
